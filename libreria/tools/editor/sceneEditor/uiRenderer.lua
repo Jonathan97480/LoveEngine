@@ -205,7 +205,8 @@ function uiRenderer.updateLayerListPanel()
     layerListPanel.properties = {}
     if currentScene then
         for i, layer in ipairs(currentScene.layers) do
-            local layerName = (i == selectedLayer) and ("→ " .. layer.name) or layer.name
+            -- Afficher simplement le nom du calque sans indicateur spécial pour les verrouillés
+            local layerName = layer.name
             layerListPanel:addTextProperty("Calque " .. i, layerName, false)
         end
     end
@@ -288,6 +289,15 @@ function uiRenderer.setCurrentScene(scene)
 end
 
 function uiRenderer.setSelectedLayer(layer)
+    -- Vérifier si le calque cible est verrouillé et n'est pas le calque actuel
+    if currentScene and currentScene.layers[layer] then
+        local targetLayer = currentScene.layers[layer]
+        if targetLayer.locked and layer ~= selectedLayer then
+            _G.globalFunction.log.info("Calque verrouillé - sélection impossible: " .. targetLayer.name)
+            return -- Ne pas changer de calque
+        end
+    end
+
     selectedLayer = layer
     -- Masquer tous les autres calques pour se concentrer sur le calque actif
     if currentScene then
@@ -437,9 +447,17 @@ function uiRenderer.mousepressed(x, y, button)
                     -- Extraire l'index du calque depuis le label
                     local layerIndex = tonumber(prop.label:match("Calque (%d+)"))
                     if layerIndex and layerIndex >= 1 and layerIndex <= #currentScene.layers then
+                        local targetLayer = currentScene.layers[layerIndex]
+
+                        -- Vérifier si le calque est verrouillé et n'est pas le calque actif
+                        if targetLayer.locked and layerIndex ~= selectedLayer then
+                            _G.globalFunction.log.info("Calque verrouillé - sélection impossible: " .. targetLayer.name)
+                            return true -- Bloquer la sélection
+                        end
+
                         selectedLayer = layerIndex
                         _G.globalFunction.log.info("Calque sélectionné: " ..
-                            currentScene.layers[layerIndex].name .. " (index: " .. layerIndex .. ")")
+                            targetLayer.name .. " (index: " .. layerIndex .. ")")
                         -- Masquer tous les autres calques pour se concentrer sur le calque actif
                         for j, otherLayer in ipairs(currentScene.layers) do
                             if j ~= layerIndex then
