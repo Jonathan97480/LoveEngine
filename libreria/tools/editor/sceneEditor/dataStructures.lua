@@ -16,6 +16,8 @@ function dataStructures.createNewScene(name)
                 name = "Background",
                 visible = true,
                 locked = false,
+                alpha = 1.0,
+                backgroundColor = { r = 0.1, g = 0.1, b = 0.1, a = 1.0 },
                 elements = {}
             }
         },

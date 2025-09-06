@@ -118,9 +118,19 @@ if love then
 
     function love.keypressed(key, scancode, isrepeat)
         if _G.isDevMode then
+            -- Vérifier d'abord si l'éditeur gère cette touche (pour l'édition du nom)
+            if _G.sceneEditor and _G.sceneEditor.keypressedSpecial and _G.sceneEditor.keypressedSpecial(key) then
+                return
+            end
             keypressedModeDev(key, scancode, isrepeat)
         else
             keypressedModeJeu(key, scancode, isrepeat)
+        end
+    end
+
+    function love.textinput(text)
+        if _G.isDevMode and _G.sceneEditor and _G.sceneEditor.textinput then
+            _G.sceneEditor.textinput(text)
         end
     end
 

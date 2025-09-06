@@ -4,6 +4,9 @@
 
 local res = require("libreria/tools/resource_cache")
 local responsive = _G.responsive or require("libreria/tools/responsive")
+-- Nouveaux modules HUD
+local toolbar = require("libreria.hud.toolbar.toolbar")
+local propertiesPanel = require("libreria.hud.propertiesPanel.propertiesPanel")
 -- optional unified input helper (mouse + joystick)
 
 -- Layered HUD Manager
@@ -1063,5 +1066,33 @@ function hud.addPanel(id, opts)
   local _logf = (gf and gf.log and gf.log.info) and function(...) gf.log.info(string.format(...)) end or function() end
   _logf("[HUD] addPanel alias utilisé pour '%s' (%dx%d à %d,%d)", id, w, h, x, y)
 end
+
+-- =====================================================================================
+-- NOUVELLES INTERFACES POUR LES ÉLÉMENTS GRAPHIQUES SPÉCIALISÉS
+-- =====================================================================================
+
+--- Crée une nouvelle toolbar
+-- @param x number : Position X
+-- @param y number : Position Y
+-- @param width number : Largeur
+-- @return table : Instance de toolbar
+function hud.createToolbar(x, y, width)
+  return toolbar.new(x, y, width)
+end
+
+--- Crée un nouveau panneau de propriétés
+-- @param x number : Position X
+-- @param y number : Position Y
+-- @param width number : Largeur
+-- @param height number : Hauteur
+-- @param title string : Titre du panneau
+-- @return table : Instance du panneau de propriétés
+function hud.createPropertiesPanel(x, y, width, height, title)
+  return propertiesPanel.new(x, y, width, height, title)
+end
+
+-- Alias pour retrocompatibilité
+hud.newToolbar = hud.createToolbar
+hud.newPropertiesPanel = hud.createPropertiesPanel
 
 return hud

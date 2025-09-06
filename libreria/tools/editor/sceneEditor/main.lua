@@ -20,6 +20,7 @@ local isDragging = false
 local dragOffset = { x = 0, y = 0 }
 local showElementPanel = false
 local showLayerPanel = false
+local showLayerPropertiesPanel = false
 local showFileDialog = false
 
 -- Initialisation
@@ -30,11 +31,13 @@ function sceneEditor.init()
     uiRenderer.setSelectedElement(selectedElement)
     uiRenderer.setShowLayerPanel(showLayerPanel)
     uiRenderer.setShowElementPanel(showElementPanel)
+    uiRenderer.setShowLayerPropertiesPanel(showLayerPropertiesPanel)
 end
 
 -- Mise à jour
 function sceneEditor.update(dt)
     -- Mise à jour de l'éditeur
+    uiRenderer.update(dt)
 end
 
 -- Rendu
@@ -87,6 +90,11 @@ function sceneEditor.mousepressed(x, y, button, istouch, presses)
                 end
                 return
             end
+        end
+
+        -- Vérifier les clics dans les panneaux de propriétés (déléguer à uiRenderer)
+        if uiRenderer.mousepressed(x, y, button) then
+            return
         end
 
         -- Vérifier les poignées de redimensionnement
@@ -253,6 +261,11 @@ function sceneEditor.keypressed(key)
         showElementPanel = not showElementPanel
         uiRenderer.setShowElementPanel(showElementPanel)
         globalFunction.log.info("Panneau des propriétés: " .. (showElementPanel and "activé" or "désactivé"))
+    elseif key == "f3" then
+        showLayerPropertiesPanel = not showLayerPropertiesPanel
+        uiRenderer.setShowLayerPropertiesPanel(showLayerPropertiesPanel)
+        globalFunction.log.info("Panneau des propriétés du calque: " ..
+            (showLayerPropertiesPanel and "activé" or "désactivé"))
     elseif key == "g" then
         config.editorState.gridVisible = not config.editorState.gridVisible
         globalFunction.log.info("Grille: " .. (config.editorState.gridVisible and "activée" or "désactivée"))
@@ -276,6 +289,16 @@ function sceneEditor.keypressed(key)
         uiRenderer.setSelectedElement(selectedElement)
         globalFunction.log.info("Nouvelle scène créée: " .. currentScene.name)
     end
+end
+
+-- Gestion de l'entrée de texte (relayer vers uiRenderer)
+function sceneEditor.textinput(text)
+    uiRenderer.textinput(text)
+end
+
+-- Gestion des touches spéciales (relayer vers uiRenderer)
+function sceneEditor.keypressedSpecial(key)
+    return uiRenderer.keypressed(key)
 end
 
 -- Getters
