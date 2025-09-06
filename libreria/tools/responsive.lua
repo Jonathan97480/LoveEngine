@@ -13,8 +13,36 @@ local curentDimensions = {
     height = 720
 };
 
+-- Variables de zoom
+screenManager.zoom = {
+    level = 1.0, -- Niveau de zoom actuel
+    min = 0.1,   -- Zoom minimum (10%)
+    max = 5.0,   -- Zoom maximum (500%)
+    step = 0.1   -- Incrément de zoom par molette
+};
+
 screenManager.getRatio = function()
     return screenManager.ratioScreen.width, screenManager.ratioScreen.height
+end
+
+screenManager.getZoom = function()
+    return screenManager.zoom.level
+end
+
+screenManager.setZoom = function(newZoom)
+    screenManager.zoom.level = math.max(screenManager.zoom.min, math.min(screenManager.zoom.max, newZoom))
+end
+
+screenManager.zoomIn = function()
+    screenManager.setZoom(screenManager.zoom.level + screenManager.zoom.step)
+end
+
+screenManager.zoomOut = function()
+    screenManager.setZoom(screenManager.zoom.level - screenManager.zoom.step)
+end
+
+screenManager.resetZoom = function()
+    screenManager.zoom.level = 1.0
 end
 
 screenManager.Syncro = true;
@@ -54,8 +82,10 @@ function screenManager.initMouse()
     local __rh = screenManager.ratioScreen.height or 1
     if __rw == 0 then __rw = 1 end
     if __rh == 0 then __rh = 1 end
-    screenManager.mouse.X = x / __rw;
-    screenManager.mouse.Y = y / __rh;
+    -- Appliquer le zoom aux coordonnées souris
+    local zoom = screenManager.zoom.level
+    screenManager.mouse.X = (x / __rw) / zoom;
+    screenManager.mouse.Y = (y / __rh) / zoom;
 end
 
 --[[
@@ -83,8 +113,10 @@ function screenManager.UpdateRatio(dt)
     if not screenManager.mouse then
         screenManager.mouse = {}
     end
-    screenManager.mouse.X = x / __rw2;
-    screenManager.mouse.Y = y / __rh2;
+    -- Appliquer le zoom aux coordonnées souris
+    local zoom = screenManager.zoom.level
+    screenManager.mouse.X = (x / __rw2) / zoom;
+    screenManager.mouse.Y = (y / __rh2) / zoom;
 end
 
 return screenManager;

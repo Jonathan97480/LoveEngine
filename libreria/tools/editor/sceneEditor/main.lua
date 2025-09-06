@@ -369,6 +369,11 @@ function sceneEditor.keypressed(key)
         uiRenderer.setSelectedLayer(selectedLayer)
         uiRenderer.setSelectedElement(selectedElement)
         globalFunction.log.info("Nouvelle scène créée: " .. currentScene.name)
+    elseif key == "f4" then
+        showScenePropertiesPanel = not showScenePropertiesPanel
+        uiRenderer.setShowScenePropertiesPanel(showScenePropertiesPanel)
+        globalFunction.log.info("Panneau des propriétés de scène: " ..
+            (showScenePropertiesPanel and "activé" or "désactivé"))
     elseif key == "l" then
         -- L : Ajouter un nouveau calque
         sceneEditor.addLayer()
@@ -398,6 +403,15 @@ function sceneEditor.setCurrentScene(scene)
     uiRenderer.setCurrentScene(currentScene)
     uiRenderer.setSelectedLayer(selectedLayer)
     uiRenderer.setSelectedElement(selectedElement)
+end
+
+-- NOUVEAU: Fonctions pour le rendu séparé (scène vs interface)
+function sceneEditor.drawSceneOnly()
+    uiRenderer.drawSceneOnly()
+end
+
+function sceneEditor.drawInterfaceOnly()
+    uiRenderer.drawInterfaceOnly()
 end
 
 return sceneEditor

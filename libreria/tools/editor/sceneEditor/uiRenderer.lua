@@ -218,16 +218,15 @@ function uiRenderer.createPropertiesContainer()
     local containerWidth = config.EDITOR_CONFIG.PANEL_WIDTH
     local containerHeight = screenHeight - config.EDITOR_CONFIG.TOOLBAR_HEIGHT
 
-    -- Utiliser les ratios responsive si disponibles
-    if _G.screenManager then
-        local ratioW, ratioH = _G.screenManager.getRatio()
-        -- Ajuster les dimensions selon les ratios (optionnel, peut être activé si nécessaire)
-        -- containerWidth = containerWidth * ratioW
-        -- containerHeight = containerHeight * ratioH
+    -- Utiliser les ratios responsive si disponibles pour ajuster la position
+    local ratioW, ratioH = 1, 1
+    if _G.screenManager and _G.screenManager.getRatio then
+        ratioW, ratioH = _G.screenManager.getRatio()
     end
 
-    -- Créer le conteneur principal (positionné en TOP RIGHT)
-    propertiesContainer = propertiesPanel.new(screenWidth - containerWidth, config.EDITOR_CONFIG.TOOLBAR_HEIGHT,
+    -- Créer le conteneur principal (positionné en TOP RIGHT dans le système de coordonnées scaled)
+    propertiesContainer = propertiesPanel.new((screenWidth / ratioW) - containerWidth,
+        config.EDITOR_CONFIG.TOOLBAR_HEIGHT,
         containerWidth, containerHeight)
 
     -- Initialiser le contenu du conteneur
@@ -753,6 +752,25 @@ end
 -- Getter pour selectedLayer
 function uiRenderer.getSelectedLayer()
     return selectedLayer
+end
+
+-- NOUVEAU: Fonction pour dessiner uniquement la scène (avec zoom)
+function uiRenderer.drawSceneOnly()
+    uiRenderer.drawGrid()
+    uiRenderer.drawScene()
+end
+
+-- NOUVEAU: Fonction pour dessiner uniquement l'interface (sans zoom)
+function uiRenderer.drawInterfaceOnly()
+    uiRenderer.drawToolbar()
+    uiRenderer.drawPanels()
+
+    -- Informations de débogage
+    love.graphics.setColor(1, 1, 1, 0.7)
+    love.graphics.print(
+        "F1: Calques | F2: Propriétés élément | F3: Propriétés calque | F4: Propriétés scène | G: Grille | Ctrl+N: Nouveau | Ctrl+S: Sauvegarder",
+        10,
+        love.graphics.getHeight() - 20)
 end
 
 return uiRenderer

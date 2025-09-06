@@ -16,6 +16,45 @@ local MODES = {
 -- Variables globales de configuration
 _G.config = config
 
+function mousemovedModeDev(x, y, dx, dy, istouch)
+    -- Appliquer le scaling responsive aux coordonnées de la souris
+    local ratioW, ratioH = 1, 1
+    if _G.screenManager and _G.screenManager.getRatio then
+        ratioW, ratioH = _G.screenManager.getRatio()
+    end
+    local scaledX = x / ratioW
+    local scaledY = y / ratioH
+
+    -- Vérifier si le mouvement est dans la zone de la scène (après la toolbar)
+    local toolbarHeight = 40
+    local zoom = 1.0
+    if _G.screenManager and _G.screenManager.getZoom then
+        zoom = _G.screenManager.getZoom()
+    end
+
+    if scaledY > toolbarHeight then
+        -- Mouvement dans la zone de la scène : appliquer le zoom inverse
+        local sceneX = 0
+        local sceneY = toolbarHeight
+        local localX = (scaledX - sceneX) / zoom
+        local localY = (scaledY - sceneY) / zoom
+        local localDX = dx / ratioW / zoom
+        local localDY = dy / ratioH / zoom
+
+        -- Gestion du mouvement dans l'éditeur de scènes
+        if _G.sceneEditor then
+            _G.sceneEditor.mousemoved(localX, localY, localDX, localDY, istouch)
+        end
+    else
+        -- Mouvement dans l'interface : coordonnées normales
+        if _G.sceneEditor then
+            _G.sceneEditor.mousemoved(scaledX, scaledY, dx / ratioW, dy / ratioH, istouch)
+        end
+    end
+end
+
+_G.config = config
+
 -- Détection du mode via arguments de ligne de commande
 local function detecterMode()
     -- Récupération sécurisée des arguments
@@ -93,6 +132,10 @@ if love then
             -- Mode Développement : Interface d'outils
             _G.globalFunction.log.info("Initialisation du mode Développement...")
             initialiserModeDev()
+
+            -- Test du système de zoom
+            local testZoom = require("test_zoom")
+            testZoom.run()
         else
             -- Mode Jeu : Jeu normal
             _G.globalFunction.log.info("Initialisation du mode Jeu...")
@@ -155,6 +198,14 @@ if love then
             mousereleasedModeDev(x, y, button, istouch, presses)
         else
             mousereleasedModeJeu(x, y, button, istouch, presses)
+        end
+    end
+
+    function love.wheelmoved(x, y)
+        if _G.isDevMode then
+            wheelmovedModeDev(x, y)
+        else
+            wheelmovedModeJeu(x, y)
         end
     end
 
@@ -225,7 +276,7 @@ function drawModeDev()
     -- Interface de développement
     love.graphics.clear(0.1, 0.1, 0.2) -- Fond bleu foncé pour le mode dev
 
-    -- Appliquer le scaling responsive
+    -- Appliquer le scaling responsive (sans zoom pour l'interface)
     local ratioW, ratioH = 1, 1
     if _G.screenManager and _G.screenManager.getRatio then
         ratioW, ratioH = _G.screenManager.getRatio()
@@ -234,9 +285,46 @@ function drawModeDev()
     love.graphics.push()
     love.graphics.scale(ratioW, ratioH)
 
-    -- Dessiner l'éditeur de scènes si disponible
+    -- Dessiner l'interface (toolbar, panneaux) sans zoom
     if _G.sceneEditor then
-        _G.sceneEditor.draw()
+        -- Sauvegarder l'état graphique
+        love.graphics.push()
+
+        -- Appliquer le zoom uniquement à la zone de la scène
+        local zoom = 1.0
+        if _G.screenManager and _G.screenManager.getZoom then
+            zoom = _G.screenManager.getZoom()
+        end
+
+        -- Calculer la zone de la scène (après la toolbar)
+        local toolbarHeight = 40 -- Hauteur de la toolbar
+        local sceneX = 0
+        local sceneY = toolbarHeight
+        local sceneWidth = love.graphics.getWidth() / ratioW
+        local sceneHeight = (love.graphics.getHeight() / ratioH) - toolbarHeight
+
+        -- Se positionner à l'origine de la zone scène
+        love.graphics.translate(sceneX, sceneY)
+        love.graphics.scale(zoom, zoom)
+
+        -- Dessiner uniquement la scène avec zoom
+        _G.sceneEditor.drawSceneOnly()
+
+        -- Restaurer l'état graphique
+        love.graphics.pop()
+
+        -- Dessiner l'interface (toolbar, panneaux) sans zoom
+        _G.sceneEditor.drawInterfaceOnly()
+
+        -- Afficher le niveau de zoom
+        if _G.screenManager and _G.screenManager.getZoom then
+            local currentZoom = _G.screenManager.getZoom()
+            love.graphics.setColor(1, 1, 1, 0.8)
+            love.graphics.rectangle("fill", 10, 10, 120, 25)
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.print(string.format("Zoom: %.1f%%", currentZoom * 100), 15, 15)
+            love.graphics.setColor(1, 1, 1)
+        end
     else
         -- Interface par défaut
         love.graphics.setColor(1, 1, 1)
@@ -264,11 +352,32 @@ function keypressedModeDev(key, scancode, isrepeat)
         _G.globalFunction.log.info("Scene Editor activé via F2")
     elseif key == "f3" then
         _G.globalFunction.log.info("Object Inspector (TODO)")
+    elseif key == "0" and (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) then
+        -- Ctrl+0 : Reset zoom
+        if _G.screenManager and _G.screenManager.resetZoom then
+            _G.screenManager.resetZoom()
+            _G.screenManager.UpdateRatio(0)
+            _G.globalFunction.log.info("Zoom réinitialisé: 100%")
+        end
+    elseif key == "kp+" or key == "=" then
+        -- + : Zoom avant
+        if _G.screenManager and _G.screenManager.zoomIn then
+            _G.screenManager.zoomIn()
+            _G.screenManager.UpdateRatio(0)
+            _G.globalFunction.log.info("Zoom avant: " .. string.format("%.1f", _G.screenManager.getZoom() * 100) .. "%")
+        end
+    elseif key == "kp-" or key == "-" then
+        -- - : Zoom arrière
+        if _G.screenManager and _G.screenManager.zoomOut then
+            _G.screenManager.zoomOut()
+            _G.screenManager.UpdateRatio(0)
+            _G.globalFunction.log.info("Zoom arrière: " .. string.format("%.1f", _G.screenManager.getZoom() * 100) .. "%")
+        end
     end
 end
 
 function mousepressedModeDev(x, y, button, istouch, presses)
-    -- Appliquer le scaling inverse aux coordonnées de la souris
+    -- Appliquer le scaling responsive aux coordonnées de la souris
     local ratioW, ratioH = 1, 1
     if _G.screenManager and _G.screenManager.getRatio then
         ratioW, ratioH = _G.screenManager.getRatio()
@@ -276,22 +385,56 @@ function mousepressedModeDev(x, y, button, istouch, presses)
     local scaledX = x / ratioW
     local scaledY = y / ratioH
 
-    -- Gestion des clics dans l'éditeur de scènes
-    if _G.sceneEditor then
-        _G.sceneEditor.mousepressed(scaledX, scaledY, button, istouch, presses)
+    -- Variables pour la logique de zones
+    local toolbarHeight = 40
+    local zoom = 1.0
+    if _G.screenManager and _G.screenManager.getZoom then
+        zoom = _G.screenManager.getZoom()
+    end
+
+    -- Vérifier si le clic est dans la zone du panneau des propriétés (côté droit)
+    local panelWidth = 300 -- Largeur du panneau des propriétés
+    local screenWidth = love.graphics.getWidth() / ratioW
+    local panelX = screenWidth - panelWidth
+
+    if scaledX >= panelX then
+        -- Clic dans le panneau des propriétés : coordonnées scaled (interface)
+        if _G.sceneEditor then
+            _G.sceneEditor.mousepressed(scaledX, scaledY, button, istouch, presses)
+        end
+    elseif scaledY > toolbarHeight then
+        -- Clic dans la zone de la scène : appliquer le zoom inverse
+        local sceneX = 0
+        local sceneY = toolbarHeight
+        local localX = (scaledX - sceneX) / zoom
+        local localY = (scaledY - sceneY) / zoom
+
+        -- Gestion des clics dans l'éditeur de scènes
+        if _G.sceneEditor then
+            _G.sceneEditor.mousepressed(localX, localY, button, istouch, presses)
+        end
+    else
+        -- Clic dans l'interface (toolbar) : coordonnées scaled
+        if _G.sceneEditor then
+            _G.sceneEditor.mousepressed(scaledX, scaledY, button, istouch, presses)
+        end
     end
 end
 
 function mousemovedModeDev(x, y, dx, dy, istouch)
-    -- Appliquer le scaling inverse aux coordonnées de la souris
+    -- Appliquer le scaling inverse et le zoom aux coordonnées de la souris
     local ratioW, ratioH = 1, 1
     if _G.screenManager and _G.screenManager.getRatio then
         ratioW, ratioH = _G.screenManager.getRatio()
     end
-    local scaledX = x / ratioW
-    local scaledY = y / ratioH
-    local scaledDX = dx / ratioW
-    local scaledDY = dy / ratioH
+    local zoom = 1.0
+    if _G.screenManager and _G.screenManager.getZoom then
+        zoom = _G.screenManager.getZoom()
+    end
+    local scaledX = (x / ratioW) / zoom
+    local scaledY = (y / ratioH) / zoom
+    local scaledDX = (dx / ratioW) / zoom
+    local scaledDY = (dy / ratioH) / zoom
 
     -- Gestion des mouvements de souris dans l'éditeur de scènes
     if _G.sceneEditor then
@@ -300,7 +443,7 @@ function mousemovedModeDev(x, y, dx, dy, istouch)
 end
 
 function mousereleasedModeDev(x, y, button, istouch, presses)
-    -- Appliquer le scaling inverse aux coordonnées de la souris
+    -- Appliquer le scaling responsive aux coordonnées de la souris
     local ratioW, ratioH = 1, 1
     if _G.screenManager and _G.screenManager.getRatio then
         ratioW, ratioH = _G.screenManager.getRatio()
@@ -308,9 +451,29 @@ function mousereleasedModeDev(x, y, button, istouch, presses)
     local scaledX = x / ratioW
     local scaledY = y / ratioH
 
-    -- Gestion du relâchement de souris dans l'éditeur de scènes
-    if _G.sceneEditor then
-        _G.sceneEditor.mousereleased(scaledX, scaledY, button)
+    -- Vérifier si le relâchement est dans la zone de la scène (après la toolbar)
+    local toolbarHeight = 40
+    local zoom = 1.0
+    if _G.screenManager and _G.screenManager.getZoom then
+        zoom = _G.screenManager.getZoom()
+    end
+
+    if scaledY > toolbarHeight then
+        -- Relâchement dans la zone de la scène : appliquer le zoom inverse
+        local sceneX = 0
+        local sceneY = toolbarHeight
+        local localX = (scaledX - sceneX) / zoom
+        local localY = (scaledY - sceneY) / zoom
+
+        -- Gestion du relâchement dans l'éditeur de scènes
+        if _G.sceneEditor then
+            _G.sceneEditor.mousereleased(localX, localY, button)
+        end
+    else
+        -- Relâchement dans l'interface : coordonnées normales
+        if _G.sceneEditor then
+            _G.sceneEditor.mousereleased(scaledX, scaledY, button)
+        end
     end
 end
 
@@ -365,4 +528,25 @@ end
 
 function mousereleasedModeJeu(x, y, button, istouch, presses)
     -- Gestion du relâchement de souris dans le jeu
+end
+
+function wheelmovedModeDev(x, y)
+    -- Gestion du zoom avec la molette de souris
+    if _G.screenManager then
+        if y > 0 then
+            -- Zoom avant (molette vers le haut)
+            _G.screenManager.zoomIn()
+            _G.globalFunction.log.info("Zoom avant: " .. string.format("%.1f", _G.screenManager.getZoom() * 100) .. "%")
+        elseif y < 0 then
+            -- Zoom arrière (molette vers le bas)
+            _G.screenManager.zoomOut()
+            _G.globalFunction.log.info("Zoom arrière: " .. string.format("%.1f", _G.screenManager.getZoom() * 100) .. "%")
+        end
+        -- Mettre à jour les ratios après le changement de zoom
+        _G.screenManager.UpdateRatio(0)
+    end
+end
+
+function wheelmovedModeJeu(x, y)
+    -- Gestion du zoom dans le mode jeu (si nécessaire)
 end
