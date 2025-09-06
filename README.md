@@ -1,6 +1,19 @@
 # LoveEngine
 
-[![Love2D](https://img.shields.io/badge/Love2D-11.4-blue.svg)](https://love2d.org/)
+[![Love2D](http**Interface :**
+- Fond gris
+- Jeu normal sans outils de développement
+- ESC pour retourner au mode développement
+
+## 🔄 Changements Récents
+
+### v1.0.1 - Correction de stabilité
+- ✅ **Correction critique** : Résolution de l'erreur `ipairs` dans la détection de mode
+- ✅ **Amélioration robustesse** : Gestion sécurisée des arguments Love2D
+- ✅ **Système de modes stable** : Modes développement et jeu entièrement fonctionnels
+- ✅ **Logs optimisés** : Messages de debug nettoyés pour la production
+
+## �📋 Descriptiong.shields.io/badge/Love2D-11.4-blue.svg)](https://love2d.org/)
 [![Lua](https://img.shields.io/badge/Lua-5.1-blue.svg)](https://www.lua.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -39,6 +52,12 @@ love . --game
 LoveEngine est un framework de développement de jeux 2D basé sur Love2D qui fournit une architecture modulaire et extensible. Le projet inclut un système de gestion de ressources, d'interface utilisateur, de sauvegarde, de localisation et bien plus encore.
 
 ## ✨ Fonctionnalités
+
+### 🎮 Système de Modes
+- **Mode Développement** - Interface d'outils avec débogage intégré
+- **Mode Jeu** - Expérience de jeu pure sans outils de développement
+- **Détection automatique** des arguments de ligne de commande
+- **Basculement fluide** entre les modes (ESC en mode jeu)
 
 ### 🛠️ Outils de Base
 - **Gestionnaire de Ressources** (`resource_cache`) - Cache intelligent avec monitoring mémoire
@@ -136,7 +155,15 @@ cd LoveEngine
 
 2. Lancez le jeu :
 ```bash
+# Mode développement (par défaut)
 love .
+# ou
+./run.bat dev
+
+# Mode jeu
+./run.bat game
+# ou
+love . --game
 ```
 
 ## 📖 Utilisation
