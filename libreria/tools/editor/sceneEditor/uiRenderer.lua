@@ -8,6 +8,7 @@ local resizeSystem = require("libreria.tools.editor.sceneEditor.resizeSystem")
 
 -- NOUVEAU: Utilisation des modules HUD standardisés
 local hud = _G.hud or require("libreria.hud.hud")
+local propertiesPanel = require("libreria.hud.propertiesPanel.propertiesPanel")
 
 -- Variables d'état (seront définies depuis le module principal)
 local currentScene = nil
@@ -17,11 +18,10 @@ local showLayerPanel = false
 local showElementPanel = false
 local showLayerPropertiesPanel = false
 
--- NOUVEAU: Instances des éléments HUD
-local mainToolbar = nil
-local layerPropertiesPanel = nil
-local elementPropertiesPanel = nil
-local layerListPanel = nil
+-- NOUVEAU: Conteneur principal pour les panneaux
+local propertiesContainer = nil
+local containerScrollOffset = 0
+local containerMaxScroll = 0
 
 -- Variables pour le curseur clignotant (conservées pour compatibilité)
 local cursorBlinkTimer = 0
@@ -189,137 +189,383 @@ function uiRenderer.drawScene()
     resizeSystem.drawResizeHandles(currentScene, selectedLayer)
 end
 
--- Dessin des panneaux (NOUVEAU: utilise le module HUD standardisé)
+-- Dessin des panneaux (NOUVEAU: système de conteneur avec slider)
 function uiRenderer.drawPanels()
-    local panelX = love.graphics.getWidth() - config.EDITOR_CONFIG.PANEL_WIDTH
-    local panelY = config.EDITOR_CONFIG.TOOLBAR_HEIGHT
+    -- Créer le conteneur principal si nécessaire
+    if not propertiesContainer then
+        uiRenderer.createPropertiesContainer()
+    end
 
-    -- Panneau des calques
+    -- Dessiner le conteneur principal
+    if propertiesContainer then
+        propertiesContainer:draw()
+
+        -- Dessiner la scrollbar si nécessaire
+        if containerMaxScroll > 0 then
+            uiRenderer.drawContainerScrollbar()
+        end
+    end
+end
+
+-- NOUVEAU: Créer le conteneur principal pour les panneaux
+function uiRenderer.createPropertiesContainer()
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
+    local containerWidth = config.EDITOR_CONFIG.PANEL_WIDTH
+    local containerHeight = screenHeight - config.EDITOR_CONFIG.TOOLBAR_HEIGHT
+
+    -- Créer le conteneur principal (positionné en TOP RIGHT)
+    propertiesContainer = propertiesPanel.new(screenWidth - containerWidth, config.EDITOR_CONFIG.TOOLBAR_HEIGHT,
+        containerWidth, containerHeight)
+
+    -- Initialiser le contenu du conteneur
+    uiRenderer.updatePropertiesContainer()
+end
+
+-- NOUVEAU: Mettre à jour le contenu du conteneur
+function uiRenderer.updatePropertiesContainer()
+    if not propertiesContainer then return end
+
+    -- Réinitialiser le contenu
+    propertiesContainer.properties = {}
+    local currentY = 10 -- Position Y de départ dans le conteneur
+
+    -- 1. Panneau des calques
     if showLayerPanel then
-        if not layerListPanel then
-            layerListPanel = hud.createPropertiesPanel(panelX, panelY, config.EDITOR_CONFIG.PANEL_WIDTH, 200,
-                "Calques")
-            -- Initialiser les propriétés des calques
-            uiRenderer.updateLayerListPanel()
-        end
-        layerListPanel:draw()
+        currentY = uiRenderer.addLayerPanelToContainer(currentY)
     end
 
-    -- Panneau des propriétés d'élément
-    if showElementPanel and selectedElement then
-        if not elementPropertiesPanel then
-            elementPropertiesPanel = hud.createPropertiesPanel(panelX, panelY + 220, config.EDITOR_CONFIG.PANEL_WIDTH,
-                300, "Propriétés")
-            -- Initialiser les propriétés de l'élément
-            uiRenderer.updateElementPropertiesPanel()
-        end
-        elementPropertiesPanel:draw()
-    end
-
-    -- Panneau des propriétés du calque
+    -- 2. Panneau des propriétés du calque
     if showLayerPropertiesPanel and currentScene and currentScene.layers[selectedLayer] then
-        if not layerPropertiesPanel then
-            layerPropertiesPanel = hud.createPropertiesPanel(panelX, panelY, config.EDITOR_CONFIG.PANEL_WIDTH, 250,
-                "Propriétés du calque")
-            -- Initialiser les propriétés du calque
-            uiRenderer.updateLayerPropertiesPanel()
-        end
-        layerPropertiesPanel:draw()
+        currentY = uiRenderer.addLayerPropertiesToContainer(currentY)
+    end
+
+    -- 3. Panneau des propriétés d'élément
+    if showElementPanel and selectedElement then
+        currentY = uiRenderer.addElementPropertiesToContainer(currentY)
+    end
+
+    -- Calculer la hauteur totale du contenu
+    local contentHeight = currentY + 20
+    local containerHeight = love.graphics.getHeight() - config.EDITOR_CONFIG.TOOLBAR_HEIGHT
+
+    -- Mettre à jour le scroll maximum
+    containerMaxScroll = math.max(0, contentHeight - containerHeight)
+
+    -- Ajuster le scroll offset si nécessaire
+    if containerScrollOffset > containerMaxScroll then
+        containerScrollOffset = containerMaxScroll
     end
 end
 
--- Fonctions helper pour mettre à jour les panneaux
+-- NOUVEAU: Mettre à jour le panneau des calques (alias pour updatePropertiesContainer)
 function uiRenderer.updateLayerListPanel()
-    if not layerListPanel then return end
-
-    layerListPanel.properties = {}
-    if currentScene then
-        -- Ajouter un bouton pour créer un nouveau calque
-        layerListPanel:addButtonProperty("Nouveau calque", function()
-            _G.globalFunction.log.info("Bouton Nouveau calque cliqué")
-            if _G.sceneEditor and _G.sceneEditor.addLayer then
-                _G.sceneEditor.addLayer()
-                uiRenderer.updateLayerListPanel() -- Rafraîchir la liste
-                _G.globalFunction.log.info("Nouveau calque ajouté depuis le panneau")
-            else
-                _G.globalFunction.log.error("_G.sceneEditor ou addLayer non disponible")
-            end
-        end)
-
-        for i, layer in ipairs(currentScene.layers) do
-            -- Créer un bouton pour chaque calque avec indicateur de sélection
-            local buttonText = layer.name
-            if i == selectedLayer then
-                buttonText = "▶ " .. buttonText .. " ◀" -- Indicateur visuel pour le calque sélectionné
-            end
-
-            layerListPanel:addButtonProperty(buttonText, function()
-                _G.globalFunction.log.info("Sélection du calque: " .. layer.name)
-                uiRenderer.setSelectedLayer(i)
-                -- Rafraîchir le panneau après la sélection
-                uiRenderer.updateLayerListPanel()
-            end)
-        end
-    end
+    uiRenderer.updatePropertiesContainer()
 end
 
-function uiRenderer.updateElementPropertiesPanel()
-    if not elementPropertiesPanel or not selectedElement then return end
+-- NOUVEAU: Ajouter le panneau des calques au conteneur
+function uiRenderer.addLayerPanelToContainer(startY)
+    if not propertiesContainer then return startY end
 
-    elementPropertiesPanel.properties = {}
+    local currentY = startY
 
-    elementPropertiesPanel:addTextProperty("Type", selectedElement.type, false)
-    elementPropertiesPanel:addTextProperty("Position X", tostring(selectedElement.x), false)
-    elementPropertiesPanel:addTextProperty("Position Y", tostring(selectedElement.y), false)
-    elementPropertiesPanel:addTextProperty("Largeur", tostring(selectedElement.width), false)
-    elementPropertiesPanel:addTextProperty("Hauteur", tostring(selectedElement.height), false)
+    -- Titre du panneau (supprimé car addCustomProperty n'existe pas)
+    -- propertiesContainer:addCustomProperty("Calques", function(x, y)
+    --     love.graphics.setColor(1, 1, 1, 1)
+    --     love.graphics.print("Calques", x, y + containerScrollOffset)
+    -- end, 20)
 
-    -- Propriétés spécifiques selon le type d'élément
-    if selectedElement.type == config.ELEMENT_TYPES.TEXT and selectedElement.properties then
-        elementPropertiesPanel:addTextProperty("Texte", selectedElement.properties.text or "", true)
-        if selectedElement.properties.color then
-            elementPropertiesPanel:addColorProperty("Couleur",
-                selectedElement.properties.color[1] or 1,
-                selectedElement.properties.color[2] or 1,
-                selectedElement.properties.color[3] or 1,
-                selectedElement.properties.color[4] or 1)
+    currentY = currentY + 25
+
+    -- Bouton Nouveau calque
+    propertiesContainer:addButtonProperty("Nouveau calque", function()
+        _G.globalFunction.log.info("Bouton Nouveau calque cliqué")
+        if _G.sceneEditor and _G.sceneEditor.addLayer then
+            _G.sceneEditor.addLayer()
+            uiRenderer.updatePropertiesContainer()
+            _G.globalFunction.log.info("Nouveau calque ajouté depuis le conteneur")
         end
-    end
-end
-
-function uiRenderer.updateLayerPropertiesPanel()
-    if not layerPropertiesPanel or not currentScene or not currentScene.layers[selectedLayer] then return end
-
-    local layer = currentScene.layers[selectedLayer]
-    layerPropertiesPanel.properties = {}
-
-    layerPropertiesPanel:addTextProperty("Nom", layer.name, true)
-    layerPropertiesPanel:addBooleanProperty("Visible", layer.visible)
-    layerPropertiesPanel:addBooleanProperty("Verrouillé", layer.locked)
-    layerPropertiesPanel:addSliderProperty("Alpha", layer.alpha or 1.0, function(value)
-        layer.alpha = value
-        _G.globalFunction.log.info("Alpha du calque modifié: " .. value)
     end)
 
-    -- Initialiser backgroundColor si elle n'existe pas
-    if not layer.backgroundColor then
-        layer.backgroundColor = { r = 0.1, g = 0.1, b = 0.1, a = 1.0 }
+    currentY = currentY + 30
+
+    -- Liste des calques
+    if currentScene then
+        for i, layer in ipairs(currentScene.layers) do
+            local buttonText = layer.name
+            if i == selectedLayer then
+                buttonText = "▶ " .. buttonText .. " ◀"
+            end
+
+            propertiesContainer:addButtonProperty(buttonText, function()
+                _G.globalFunction.log.info("Sélection du calque: " .. layer.name)
+                uiRenderer.setSelectedLayer(i)
+                uiRenderer.updatePropertiesContainer()
+            end)
+
+            currentY = currentY + 30
+        end
     end
 
-    layerPropertiesPanel:addColorProperty("Couleur",
-        layer.backgroundColor.r or 0.5,
-        layer.backgroundColor.g or 0.5,
-        layer.backgroundColor.b or 0.5,
-        layer.backgroundColor.a or 1,
-        function(r, g, b, a)
-            layer.backgroundColor.r = r
-            layer.backgroundColor.g = g
-            layer.backgroundColor.b = b
-            layer.backgroundColor.a = a
-            _G.globalFunction.log.info("Couleur du calque modifiée: " .. r .. ", " .. g .. ", " .. b .. ", " .. a)
-        end)
+    return currentY + 10
+end
 
-    layerPropertiesPanel:addTextProperty("Éléments", tostring(#layer.elements), false)
+-- NOUVEAU: Ajouter les propriétés du calque au conteneur
+function uiRenderer.addLayerPropertiesToContainer(startY)
+    if not propertiesContainer then return startY end
+
+    local currentY = startY
+
+    -- Titre du panneau (supprimé car addCustomProperty n'existe pas)
+    -- propertiesContainer:addCustomProperty("Propriétés du calque", function(x, y)
+    --     love.graphics.setColor(1, 1, 1, 1)
+    --     love.graphics.print("Propriétés du calque", x, y + containerScrollOffset)
+    -- end, 20)
+
+    currentY = currentY + 25
+
+    if currentScene and currentScene.layers[selectedLayer] then
+        local layer = currentScene.layers[selectedLayer]
+
+        propertiesContainer:addTextProperty("Nom", layer.name, true)
+        currentY = currentY + 30
+
+        propertiesContainer:addBooleanProperty("Visible", layer.visible)
+        currentY = currentY + 30
+
+        propertiesContainer:addBooleanProperty("Verrouillé", layer.locked)
+        currentY = currentY + 30
+
+        propertiesContainer:addSliderProperty("Alpha", layer.alpha or 1.0, function(value)
+            layer.alpha = value
+            _G.globalFunction.log.info("Alpha du calque modifié: " .. value)
+        end)
+        currentY = currentY + 40
+
+        if layer.backgroundColor then
+            propertiesContainer:addColorProperty("Couleur de fond",
+                layer.backgroundColor.r or 0.1,
+                layer.backgroundColor.g or 0.1,
+                layer.backgroundColor.b or 0.1,
+                layer.backgroundColor.a or 1.0,
+                function(r, g, b, a)
+                    layer.backgroundColor.r = r
+                    layer.backgroundColor.g = g
+                    layer.backgroundColor.b = b
+                    layer.backgroundColor.a = a
+                    _G.globalFunction.log.info("Couleur de fond du calque modifiée: " ..
+                    r .. ", " .. g .. ", " .. b .. ", " .. a)
+                end)
+            currentY = currentY + 40
+        end
+    end
+
+    return currentY + 10
+end
+
+-- NOUVEAU: Ajouter les propriétés d'élément au conteneur
+function uiRenderer.addElementPropertiesToContainer(startY)
+    if not propertiesContainer then return startY end
+
+    local currentY = startY
+
+    -- Titre du panneau (supprimé car addCustomProperty n'existe pas)
+    -- propertiesContainer:addCustomProperty("Propriétés d'élément", function(x, y)
+    --     love.graphics.setColor(1, 1, 1, 1)
+    --     love.graphics.print("Propriétés d'élément", x, y + containerScrollOffset)
+    -- end, 20)
+
+    currentY = currentY + 25
+
+    if selectedElement then
+        propertiesContainer:addTextProperty("Type", selectedElement.type, false)
+        currentY = currentY + 30
+
+        propertiesContainer:addTextProperty("Position X", tostring(selectedElement.x), false)
+        currentY = currentY + 30
+
+        propertiesContainer:addTextProperty("Position Y", tostring(selectedElement.y), false)
+        currentY = currentY + 30
+
+        propertiesContainer:addTextProperty("Largeur", tostring(selectedElement.width), false)
+        currentY = currentY + 30
+
+        propertiesContainer:addTextProperty("Hauteur", tostring(selectedElement.height), false)
+        currentY = currentY + 30
+
+        -- Propriétés spécifiques selon le type d'élément
+        if selectedElement.type == config.ELEMENT_TYPES.TEXT and selectedElement.properties then
+            propertiesContainer:addTextProperty("Texte", selectedElement.properties.text or "", true)
+            currentY = currentY + 30
+
+            if selectedElement.properties.color then
+                propertiesContainer:addColorProperty("Couleur",
+                    selectedElement.properties.color[1] or 1,
+                    selectedElement.properties.color[2] or 1,
+                    selectedElement.properties.color[3] or 1,
+                    selectedElement.properties.color[4] or 1,
+                    function(r, g, b, a)
+                        selectedElement.properties.color[1] = r
+                        selectedElement.properties.color[2] = g
+                        selectedElement.properties.color[3] = b
+                        selectedElement.properties.color[4] = a
+                        _G.globalFunction.log.info("Couleur de l'élément modifiée: " ..
+                        r .. ", " .. g .. ", " .. b .. ", " .. a)
+                    end)
+                currentY = currentY + 40
+            end
+        end
+    end
+
+    return currentY + 10
+end
+
+-- NOUVEAU: Dessiner la scrollbar du conteneur
+function uiRenderer.drawContainerScrollbar()
+    if not propertiesContainer then return end
+
+    local containerX = propertiesContainer.x
+    local containerY = propertiesContainer.y
+    local containerWidth = propertiesContainer.width
+    local containerHeight = propertiesContainer.height
+
+    -- Fond de la scrollbar
+    love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
+    love.graphics.rectangle("fill", containerX + containerWidth - 15, containerY, 15, containerHeight)
+
+    -- Position de la scrollbar
+    local scrollbarHeight = math.max(30, (containerHeight / (containerHeight + containerMaxScroll)) * containerHeight)
+    local scrollbarY = containerY + (containerScrollOffset / containerMaxScroll) * (containerHeight - scrollbarHeight)
+
+    -- Dessiner la scrollbar
+    love.graphics.setColor(0.5, 0.5, 0.5, 1)
+    love.graphics.rectangle("fill", containerX + containerWidth - 12, scrollbarY, 9, scrollbarHeight)
+end
+
+-- Gestionnaire d'événements de souris pour le conteneur
+function uiRenderer.handleContainerMouse(x, y, button)
+    if not propertiesContainer then return false end
+
+    local containerX = propertiesContainer.x
+    local containerY = propertiesContainer.y
+    local containerWidth = propertiesContainer.width
+    local containerHeight = propertiesContainer.height
+
+    -- Vérifier si le clic est dans le conteneur
+    if x >= containerX and x <= containerX + containerWidth and
+        y >= containerY and y <= containerY + containerHeight then
+        -- Gérer la scrollbar
+        if containerMaxScroll > 0 and x >= containerX + containerWidth - 15 then
+            -- Calculer la position relative dans la scrollbar
+            local relativeY = y - containerY
+            local scrollRatio = relativeY / containerHeight
+            containerScrollOffset = scrollRatio * containerMaxScroll
+            containerScrollOffset = math.max(0, math.min(containerMaxScroll, containerScrollOffset))
+            return true
+        else
+            -- Déléguer le clic au conteneur de propriétés pour les boutons
+            if propertiesContainer:mousepressed(x, y, button) then
+                _G.globalFunction.log.info("Clic géré par propertiesContainer")
+                return true
+            end
+        end
+
+        return true
+    end
+
+    return false
+end
+
+-- Gestionnaire de la molette de la souris pour le scroll
+function uiRenderer.handleContainerWheel(x, y)
+    if not propertiesContainer then return false end
+
+    local containerX = propertiesContainer.x
+    local containerY = propertiesContainer.y
+    local containerWidth = propertiesContainer.width
+    local containerHeight = propertiesContainer.height
+
+    -- Vérifier si la souris est dans le conteneur
+    if x >= containerX and x <= containerX + containerWidth and
+        y >= containerY and y <= containerY + containerHeight then
+        -- Ajuster le scroll offset
+        local scrollSpeed = 20
+        containerScrollOffset = containerScrollOffset - y * scrollSpeed
+        containerScrollOffset = math.max(0, math.min(containerMaxScroll, containerScrollOffset))
+        return true
+    end
+
+    return false
+end
+
+-- Gestion des clics souris pour les panneaux HUD
+function uiRenderer.mousepressed(x, y, button)
+    _G.globalFunction.log.info("uiRenderer.mousepressed appelé: x=" .. x .. ", y=" .. y .. ", button=" .. button)
+
+    -- Gérer les clics dans le conteneur de propriétés
+    if uiRenderer.handleContainerMouse(x, y, button) then
+        _G.globalFunction.log.info("Clic géré par le conteneur de propriétés")
+        return true
+    end
+
+    -- Déléguer aux panneaux HUD (ancien système pour compatibilité)
+    if mainToolbar and mainToolbar:mousepressed(x, y, button) then
+        _G.globalFunction.log.info("Clic géré par mainToolbar")
+        return true
+    end
+
+    return false
+end
+
+-- Gestionnaire de la molette de la souris
+function uiRenderer.wheelmoved(x, y)
+    -- Gérer le scroll dans le conteneur
+    if uiRenderer.handleContainerWheel(x, y) then
+        return true
+    end
+
+    return false
+end
+
+-- Gestion des touches clavier
+function uiRenderer.keypressed(key)
+    _G.globalFunction.log.info("uiRenderer.keypressed appelé: " .. key)
+
+    -- Raccourcis clavier pour les panneaux
+    if key == "f1" then
+        -- F1 : Toggle panneau des calques
+        showLayerPanel = not showLayerPanel
+        uiRenderer.updatePropertiesContainer()
+        _G.globalFunction.log.info("Panneau des calques togglé: " .. tostring(showLayerPanel))
+        return true
+    elseif key == "f2" then
+        -- F2 : Toggle panneau des propriétés d'élément
+        showElementPanel = not showElementPanel
+        uiRenderer.updatePropertiesContainer()
+        _G.globalFunction.log.info("Panneau des propriétés d'élément togglé: " .. tostring(showElementPanel))
+        return true
+    elseif key == "f3" then
+        -- F3 : Toggle panneau des propriétés de calque
+        showLayerPropertiesPanel = not showLayerPropertiesPanel
+        uiRenderer.updatePropertiesContainer()
+        _G.globalFunction.log.info("Panneau des propriétés de calque togglé: " .. tostring(showLayerPropertiesPanel))
+        return true
+    elseif key == "g" then
+        -- G : Toggle grille
+        config.editorState.gridVisible = not config.editorState.gridVisible
+        _G.globalFunction.log.info("Grille togglée: " .. tostring(config.editorState.gridVisible))
+        return true
+    end
+
+    return false
+end
+
+-- Gestion de l'entrée de texte
+function uiRenderer.textinput(text)
+    -- Gérer l'entrée de texte pour les propriétés éditables
+    if propertiesContainer then
+        propertiesContainer:textinput(text)
+    end
 end
 
 -- Fonction principale de rendu
@@ -371,204 +617,39 @@ function uiRenderer.setSelectedLayer(layer)
             end
         end
     end
-
-    -- Log après la sélection
-    if currentScene then
-        _G.globalFunction.log.debug("Après sélection - Calque " .. layer .. " visible: " ..
-            tostring(currentScene.layers[layer] and currentScene.layers[layer].visible))
-    end
-
-    -- Mettre à jour les panneaux
-    uiRenderer.updateLayerListPanel()
-    uiRenderer.updateLayerPropertiesPanel()
 end
 
 function uiRenderer.setSelectedElement(element)
     selectedElement = element
-    -- Mettre à jour le panneau des propriétés de l'élément
-    uiRenderer.updateElementPropertiesPanel()
 end
 
 function uiRenderer.setShowLayerPanel(show)
     showLayerPanel = show
-    if show then
-        uiRenderer.updateLayerListPanel()
-    end
+    uiRenderer.updatePropertiesContainer()
 end
 
 function uiRenderer.setShowElementPanel(show)
     showElementPanel = show
-    if show then
-        uiRenderer.updateElementPropertiesPanel()
-    end
+    uiRenderer.updatePropertiesContainer()
 end
 
 function uiRenderer.setShowLayerPropertiesPanel(show)
     showLayerPropertiesPanel = show
-    if show then
-        uiRenderer.updateLayerPropertiesPanel()
-    end
+    uiRenderer.updatePropertiesContainer()
 end
 
-function uiRenderer.setEditingLayerName(editing)
-    editingLayerName = editing
-    if not editing then
-        cursorVisible = false
-        cursorBlinkTimer = 0
-    end
-end
-
-function uiRenderer.setLayerNameInput(input)
-    layerNameInput = input
-end
-
--- Fonction de mise à jour pour le curseur clignotant
+-- Fonction de mise à jour appelée chaque frame
 function uiRenderer.update(dt)
-    if editingLayerName then
-        cursorBlinkTimer = cursorBlinkTimer + dt
-        if cursorBlinkTimer >= CURSOR_BLINK_RATE then
-            cursorVisible = not cursorVisible
-            cursorBlinkTimer = 0
-        end
-    else
-        cursorVisible = false
+    -- Mettre à jour le timer du curseur pour le clignotement
+    cursorBlinkTimer = cursorBlinkTimer + dt
+    if cursorBlinkTimer >= CURSOR_BLINK_RATE then
         cursorBlinkTimer = 0
+        cursorVisible = not cursorVisible
     end
 
-    -- Mettre à jour les panneaux HUD
+    -- Mettre à jour la toolbar si elle existe
     if mainToolbar then
         mainToolbar:update(dt)
-    end
-    if layerPropertiesPanel then
-        layerPropertiesPanel:update(dt)
-    end
-    if elementPropertiesPanel then
-        elementPropertiesPanel:update(dt)
-    end
-end
-
--- Gestion des clics souris pour les panneaux HUD
-function uiRenderer.mousepressed(x, y, button)
-    _G.globalFunction.log.info("uiRenderer.mousepressed appelé: x=" .. x .. ", y=" .. y .. ", button=" .. button)
-    -- Déléguer aux panneaux HUD
-    if mainToolbar and mainToolbar:mousepressed(x, y, button) then
-        _G.globalFunction.log.info("Clic géré par mainToolbar")
-        return true
-    end
-    if layerPropertiesPanel and layerPropertiesPanel:mousepressed(x, y, button) then
-        _G.globalFunction.log.info("Clic géré par layerPropertiesPanel")
-        -- Sauvegarder les modifications du calque
-        if currentScene and currentScene.layers[selectedLayer] then
-            local layer = currentScene.layers[selectedLayer]
-            _G.globalFunction.log.info("Sauvegarde des propriétés pour le calque: " .. layer.name)
-            for _, prop in ipairs(layerPropertiesPanel.properties) do
-                _G.globalFunction.log.info("Traitement propriété: " ..
-                    prop.type .. " - " .. prop.label .. " = " .. tostring(prop.value))
-                if prop.type == "text" and prop.label == "Nom" then
-                    layer.name = prop.value
-                    _G.globalFunction.log.info("Nom du calque modifié: " .. prop.value)
-                elseif prop.type == "boolean" and prop.label == "Visible" then
-                    layer.visible = prop.value
-                    _G.globalFunction.log.info("Visibilité du calque modifiée: " .. tostring(prop.value))
-                elseif prop.type == "boolean" and prop.label == "Verrouillé" then
-                    layer.locked = prop.value
-                    _G.globalFunction.log.info("Verrouillage du calque modifié: " .. tostring(prop.value))
-                elseif prop.type == "slider" and prop.label == "Alpha" then
-                    layer.alpha = prop.value
-                    _G.globalFunction.log.info("Alpha du calque modifié: " .. prop.value)
-                elseif prop.type == "color" and prop.label == "Couleur" then
-                    if not layer.backgroundColor then layer.backgroundColor = {} end
-                    layer.backgroundColor.r = prop.value.r
-                    layer.backgroundColor.g = prop.value.g
-                    layer.backgroundColor.b = prop.value.b
-                    layer.backgroundColor.a = prop.value.a
-                    _G.globalFunction.log.info("Couleur du calque modifiée: " ..
-                        prop.value.r .. ", " .. prop.value.g .. ", " .. prop.value.b .. ", " .. prop.value.a)
-                end
-            end
-        else
-            _G.globalFunction.log.info("Pas de scène ou calque sélectionné")
-        end
-        -- Mettre à jour le panneau après les modifications
-        uiRenderer.updateLayerPropertiesPanel()
-        return true
-    end
-    if elementPropertiesPanel and elementPropertiesPanel:mousepressed(x, y, button) then
-        -- Sauvegarder les modifications de l'élément
-        if selectedElement then
-            for _, prop in ipairs(elementPropertiesPanel.properties) do
-                if prop.type == "text" and prop.label == "Texte" then
-                    if not selectedElement.properties then selectedElement.properties = {} end
-                    selectedElement.properties.text = prop.value
-                end
-            end
-        end
-        return true
-    end
-    if layerListPanel and layerListPanel:mousepressed(x, y, button) then
-        _G.globalFunction.log.info("Clic géré par layerListPanel")
-        -- Gérer la sélection de calque
-        if currentScene then
-            local propY = layerListPanel.y + 30                       -- Position de départ des propriétés
-            local lineHeight = layerListPanel.config.lineHeight or 25 -- Valeur par défaut si non définie
-            for i, prop in ipairs(layerListPanel.properties) do
-                -- Zone de clic correspondant exactement à celle du propertiesPanel pour les boutons
-                if x >= layerListPanel.x + 50 and x <= layerListPanel.x + layerListPanel.width - 10 and
-                    y >= propY - 2 and y <= propY + 18 then
-                    -- Le bouton "Nouveau calque" est à l'index 1, les calques commencent à l'index 2
-                    if i == 1 then
-                        -- C'est le bouton "Nouveau calque", on ne fait rien pour la sélection
-                        _G.globalFunction.log.info("Clic sur bouton Nouveau calque")
-                    else
-                        -- C'est un calque : l'index dans currentScene.layers est i-1
-                        local layerIndex = i - 1
-                        if layerIndex >= 1 and layerIndex <= #currentScene.layers then
-                            local targetLayer = currentScene.layers[layerIndex]
-
-                            -- Vérifier si le calque est verrouillé et n'est pas le calque actif
-                            if targetLayer.locked and layerIndex ~= selectedLayer then
-                                _G.globalFunction.log.info("Calque verrouillé - sélection impossible: " ..
-                                targetLayer.name)
-                                return true -- Bloquer la sélection
-                            end
-
-                            selectedLayer = layerIndex
-                            _G.globalFunction.log.info("Calque sélectionné: " ..
-                                targetLayer.name .. " (index: " .. layerIndex .. ")")
-                            -- NE PAS masquer les autres calques - tous doivent rester visibles
-                            uiRenderer.updateLayerListPanel()
-                            uiRenderer.updateLayerPropertiesPanel()
-                            break
-                        end
-                    end
-                end
-                propY = propY + lineHeight
-            end
-        end
-        return true
-    end
-    return false
-end
-
--- Gestion de la saisie de texte pour les panneaux HUD
-function uiRenderer.textinput(text)
-    -- Déléguer aux panneaux HUD
-    if layerPropertiesPanel then
-        layerPropertiesPanel:textinput(text)
-    end
-    if elementPropertiesPanel then
-        elementPropertiesPanel:textinput(text)
-    end
-end
-
--- Gestion des touches pour les panneaux HUD
-function uiRenderer.keypressed(key)
-    -- Déléguer aux panneaux HUD
-    if layerPropertiesPanel then
-        layerPropertiesPanel:keypressed(key)
-    end
-    if elementPropertiesPanel then
-        elementPropertiesPanel:keypressed(key)
     end
 end
 

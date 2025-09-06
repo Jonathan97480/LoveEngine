@@ -189,6 +189,12 @@ function sceneEditor.mousemoved(x, y, dx, dy)
 end
 
 function sceneEditor.wheelmoved(x, y)
+    -- Gérer d'abord le scroll dans le conteneur de propriétés
+    if uiRenderer.wheelmoved(x, y) then
+        return
+    end
+
+    -- Sinon gérer le zoom
     if y > 0 then
         config.editorState.zoom = math.min(config.editorState.zoom * 1.1,
             config.EDITOR_CONFIG.ZOOM_LEVELS[#config.EDITOR_CONFIG.ZOOM_LEVELS])
