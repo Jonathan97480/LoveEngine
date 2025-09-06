@@ -289,7 +289,18 @@ end
 
 function uiRenderer.setSelectedLayer(layer)
     selectedLayer = layer
-    -- Mettre à jour le panneau des propriétés du calque
+    -- Masquer tous les autres calques pour se concentrer sur le calque actif
+    if currentScene then
+        for i, otherLayer in ipairs(currentScene.layers) do
+            if i ~= layer then
+                otherLayer.visible = false
+            else
+                otherLayer.visible = true
+            end
+        end
+    end
+    -- Mettre à jour les panneaux
+    uiRenderer.updateLayerListPanel()
     uiRenderer.updateLayerPropertiesPanel()
 end
 
@@ -411,6 +422,38 @@ function uiRenderer.mousepressed(x, y, button)
                     if not selectedElement.properties then selectedElement.properties = {} end
                     selectedElement.properties.text = prop.value
                 end
+            end
+        end
+        return true
+    end
+    if layerListPanel and layerListPanel:mousepressed(x, y, button) then
+        _G.globalFunction.log.info("Clic géré par layerListPanel")
+        -- Gérer la sélection de calque
+        if currentScene then
+            local propY = layerListPanel.y + 30 -- Position de départ des propriétés
+            for i, prop in ipairs(layerListPanel.properties) do
+                if x >= layerListPanel.x + 10 and x <= layerListPanel.x + layerListPanel.width - 10 and
+                    y >= propY - 5 and y <= propY + 20 then
+                    -- Extraire l'index du calque depuis le label
+                    local layerIndex = tonumber(prop.label:match("Calque (%d+)"))
+                    if layerIndex and layerIndex >= 1 and layerIndex <= #currentScene.layers then
+                        selectedLayer = layerIndex
+                        _G.globalFunction.log.info("Calque sélectionné: " ..
+                            currentScene.layers[layerIndex].name .. " (index: " .. layerIndex .. ")")
+                        -- Masquer tous les autres calques pour se concentrer sur le calque actif
+                        for j, otherLayer in ipairs(currentScene.layers) do
+                            if j ~= layerIndex then
+                                otherLayer.visible = false
+                            else
+                                otherLayer.visible = true
+                            end
+                        end
+                        uiRenderer.updateLayerListPanel()
+                        uiRenderer.updateLayerPropertiesPanel()
+                        break
+                    end
+                end
+                propY = propY + layerListPanel.config.lineHeight
             end
         end
         return true
