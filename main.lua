@@ -124,11 +124,27 @@ if love then
         end
     end
 
+    function love.mousemoved(x, y, dx, dy, istouch)
+        if _G.isDevMode then
+            mousemovedModeDev(x, y, dx, dy, istouch)
+        else
+            mousemovedModeJeu(x, y, dx, dy, istouch)
+        end
+    end
+
     function love.mousepressed(x, y, button, istouch, presses)
         if _G.isDevMode then
             mousepressedModeDev(x, y, button, istouch, presses)
         else
             mousepressedModeJeu(x, y, button, istouch, presses)
+        end
+    end
+
+    function love.mousereleased(x, y, button, istouch, presses)
+        if _G.isDevMode then
+            mousereleasedModeDev(x, y, button, istouch, presses)
+        else
+            mousereleasedModeJeu(x, y, button, istouch, presses)
         end
     end
 else
@@ -209,6 +225,20 @@ function mousepressedModeDev(x, y, button, istouch, presses)
     end
 end
 
+function mousemovedModeDev(x, y, dx, dy, istouch)
+    -- Gestion des mouvements de souris dans l'éditeur de scènes
+    if _G.sceneEditor then
+        _G.sceneEditor.mousemoved(x, y, dx, dy)
+    end
+end
+
+function mousereleasedModeDev(x, y, button, istouch, presses)
+    -- Gestion du relâchement de souris dans l'éditeur de scènes
+    if _G.sceneEditor then
+        _G.sceneEditor.mousereleased(x, y, button)
+    end
+end
+
 -- =====================================================================
 -- MODE JEU
 -- =====================================================================
@@ -252,4 +282,12 @@ end
 
 function mousepressedModeJeu(x, y, button, istouch, presses)
     -- Gestion des clics dans le jeu
+end
+
+function mousemovedModeJeu(x, y, dx, dy, istouch)
+    -- Gestion des mouvements de souris dans le jeu
+end
+
+function mousereleasedModeJeu(x, y, button, istouch, presses)
+    -- Gestion du relâchement de souris dans le jeu
 end

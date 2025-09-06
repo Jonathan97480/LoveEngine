@@ -296,6 +296,10 @@ globalFunction.log.ok = function(texte) pousserLog(NIVEAU.OK, texte) end
 -- @param texte string : Message à logger
 globalFunction.log.info = function(texte) pousserLog(NIVEAU.INFO, texte) end
 
+--- Log DEBUG
+-- @param texte string : Message à logger
+globalFunction.log.debug = function(texte) pousserLog(NIVEAU.INFO, texte) end
+
 --- Log WARN
 -- @param texte string : Message à logger
 globalFunction.log.warn = function(texte) pousserLog(NIVEAU.WARN, texte) end

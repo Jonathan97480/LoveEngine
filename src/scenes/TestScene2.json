@@ -1,0 +1,1 @@
+{"layers":[{"visible":true,"name":"Background","id":1,"elements":[{"y":100,"type":"text","height":50,"id":1,"properties":{"color":[1,1,1,1],"text":"Hello World"},"x":100,"width":200}],"locked":false}],"name":"TestScene2","height":600,"metadata":{"created":"2025-09-06 11:22:30","version":"1.0","modified":"2025-09-06 11:22:30"},"width":800}
