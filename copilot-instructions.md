@@ -2,7 +2,56 @@
 
 ## Architecture du Projet
 
-Le projet est organisé comme suit :
+Le projet est organisé com### Correction Automatique
+- **Détecter et corriger** automatiquement tout nommage non conforme aux conventions Lua
+- **Variables avec underscores inappropriés** : Convertir `my_variable` → `myVariable`
+- **Fonctions PascalCase** : Convertir `MyFunction` → `myFunction` (sauf constructeurs)
+- **Constantes camelCase** : Convertir `maxSize` → `MAX_SIZE`
+- **Fichiers avec underscores** : Préférer `myModule.lua` à `my_module`
+
+## Règles d'Utilisation du Système de Logging
+
+### Utilisation Systématique des Logs
+- **Toujours utiliser le système de logging** au lieu de `print()` direct
+- **Préférer les logs structurés** avec niveaux appropriés :
+  - `_G.globalFunction.log.info()` pour informations générales
+  - `_G.globalFunction.log.warn()` pour avertissements
+  - `_G.globalFunction.log.error()` pour erreurs
+  - `_G.globalFunction.log.ok()` pour confirmations de succès
+
+### Gestion du Spam de Logs
+- **Éviter le spam** : Ne pas logger à chaque frame dans love.update()
+- **Utiliser des timers** pour limiter la fréquence des logs répétitifs
+- **Logs conditionnels** : Vérifier avant de logger si nécessaire
+
+### Patterns de Logging Recommandés
+```lua
+-- AVANT (spam possible)
+function love.update(dt)
+    globalFunction.log.info("Position: " .. player.x .. ", " .. player.y) -- SPAM !
+end
+
+-- APRÈS (avec timer)
+local logTimer = 0
+function love.update(dt)
+    logTimer = logTimer + dt
+    if logTimer >= 1.0 then -- Log chaque seconde maximum
+        globalFunction.log.info("Position: " .. player.x .. ", " .. player.y)
+        logTimer = 0
+    end
+end
+```
+
+### Bonnes Pratiques
+- **Logs dans love.load()** : `_G.globalFunction.log.info("Module initialisé")`
+- **Logs d'erreurs** : `_G.globalFunction.log.error("Erreur critique: " .. err)`
+- **Logs de debug** : Utiliser `warn` pour debug temporaire
+- **Éviter print()** : Remplacer par le système de logging approprié
+
+### Correction Automatique des Logs
+- **Détecter `print()`** et proposer conversion vers système de logging
+- **Ajouter timers automatiquement** pour logs potentiellement spammeurs
+- **Vérifier la fréquence** des logs répétitifs dans les bouclest :
 
 - **Racine** :
   - `globals.lua` : Définit les variables globales en chargeant les modules de `libreria`.
