@@ -1,0 +1,12 @@
+{
+    "spellright.language": [
+        "fr"
+    ],
+    "spellright.documentTypes": [
+        "latex",
+        "plaintext",
+        "html",
+        "scss",
+        "xml"
+    ]
+}

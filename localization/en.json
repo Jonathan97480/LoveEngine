@@ -1,0 +1,232 @@
+{
+    "meta": {
+        "language": "en",
+        "version": "1.0",
+        "name": "English",
+        "author": "GitHub Copilot",
+        "date": "2025-09-02"
+    },
+    "ui": {
+        "menu": {
+            "play": "Play",
+            "new_game": "New Game",
+            "continue": "Continue",
+            "load": "Load",
+            "load_save": "Load Game",
+            "save": "Save",
+            "no_saves": "No saves available",
+            "create_save": "Create New Save",
+            "options": "Options",
+            "settings": "Settings",
+            "credits": "Credits",
+            "quit": "Quit",
+            "back": "Back",
+            "confirm": "Confirm",
+            "cancel": "Cancel"
+        },
+        "gameplay": {
+            "end_turn": "End Turn",
+            "health": "Health",
+            "energy": "Energy",
+            "cards": "Cards",
+            "hand": "Hand",
+            "deck": "Deck",
+            "graveyard": "Graveyard",
+            "discard": "Discard",
+            "draw": "Draw",
+            "play": "Play",
+            "target": "Target",
+            "confirm_play": "Confirm",
+            "cancel_play": "Cancel"
+        },
+        "combat": {
+            "player_turn": "Your Turn",
+            "enemy_turn": "Enemy Turn",
+            "victory": "Victory!",
+            "defeat": "Defeat...",
+            "damage_dealt": "{damage} damage dealt",
+            "damage_taken": "{damage} damage taken",
+            "healing": "+{heal} HP",
+            "shield_gained": "+{shield} Shield"
+        },
+        "options": {
+            "language": "Language",
+            "volume": "Volume",
+            "volume_decrease": "Volume -",
+            "volume_increase": "Volume +",
+            "music": "Music",
+            "sfx": "Sound Effects",
+            "fullscreen": "Fullscreen",
+            "debug": "Debug Mode",
+            "save": "Save",
+            "resolution": "Resolution",
+            "difficulty": "Difficulty",
+            "auto_save": "Auto Save"
+        },
+        "tooltips": {
+            "energy_current": "Energy: {current}/{max}",
+            "energy_tip": "Used to play cards",
+            "health_current": "Health: {current}/{max}",
+            "health_tip": "Remaining health points",
+            "shield_current": "Shield: {shield}",
+            "shield_tip": "Absorbs incoming damage",
+            "card_cost": "Cost: {cost} energy",
+            "card_damage": "Damage: {damage}",
+            "card_heal": "Heal: {heal}",
+            "card_multitarget": "Targets all enemies",
+            "card_singletarget": "Targets one enemy"
+        },
+        "shortcuts": {
+            "help_title": "Keyboard Shortcuts",
+            "end_turn": "E / Enter - End turn",
+            "play_card": "1-5 - Play card at position",
+            "show_cards": "Tab - Show all cards",
+            "show_graveyard": "G - View graveyard",
+            "show_discard": "D - View discard pile",
+            "help": "H - Show this help",
+            "close": "Esc - Close windows"
+        },
+        "common": {
+            "load": "Load",
+            "save": "Save",
+            "delete": "Delete",
+            "edit": "Edit",
+            "create": "Create",
+            "back": "Back",
+            "next": "Next",
+            "previous": "Previous",
+            "ok": "OK",
+            "cancel": "Cancel",
+            "confirm": "Confirm",
+            "yes": "Yes",
+            "no": "No"
+        }
+    },
+    "cards": {
+        "names": {
+            "carte_001": "Quick Strike",
+            "carte_002": "Fireball",
+            "carte_003": "Minor Heal",
+            "carte_004": "Shield",
+            "carte_005": "Thorns",
+            "carte_006": "Power Attack",
+            "carte_007": "Major Heal",
+            "carte_008": "Life Drain",
+            "carte_009": "Meteor",
+            "carte_010": "Regeneration",
+            "jais_dencre": "Ink Splash",
+            "attaque_rapide": "Quick Attack",
+            "fil_dariane": "Guiding Thread",
+            "jais_de_couteau": "Knife Throw"
+        },
+        "descriptions": {
+            "carte_001": "Deal {damage} damage to {target}",
+            "carte_002": "Deal {damage} damage to all enemies",
+            "carte_003": "Restore {heal} health points",
+            "carte_004": "Gain {shield} shield points",
+            "carte_005": "Gain {thorns} thorns that reflect damage",
+            "carte_006": "Deal {damage} heavy damage to {target}",
+            "carte_007": "Restore {heal} major health points",
+            "carte_008": "Deal {damage} damage and gain {heal} HP",
+            "carte_009": "Deal {damage} massive damage to all enemies",
+            "carte_010": "Gain {heal} HP per turn for {duration} turns",
+            "jais_dencre": "Blind the enemy, reducing their accuracy",
+            "attaque_rapide": "Quick attack that deals {damage} damage",
+            "fil_dariane": "Find your way back and gain energy",
+            "jais_de_couteau": "Piercing attack that ignores shield"
+        },
+        "rarities": {
+            "common": "Common",
+            "uncommon": "Uncommon",
+            "rare": "Rare",
+            "epic": "Epic",
+            "legendary": "Legendary"
+        },
+        "types": {
+            "attack": "Attack",
+            "spell": "Spell",
+            "defense": "Defense",
+            "utility": "Utility",
+            "healing": "Healing"
+        }
+    },
+    "story": {
+        "intro": {
+            "title": "The Cursed Castle",
+            "text1": "Once upon a time, in a distant kingdom...",
+            "text2": "A brave hero stood against the darkness...",
+            "text3": "The castle atop the hill held terrible secrets...",
+            "continue": "Press any key to continue"
+        },
+        "chapters": {
+            "chapter1": "Chapter 1: The Arrival",
+            "chapter2": "Chapter 2: The Village",
+            "chapter3": "Chapter 3: The Forest",
+            "chapter4": "Chapter 4: The Castle"
+        }
+    },
+    "enemies": {
+        "names": {
+            "goblin": "Goblin",
+            "orc": "Orc",
+            "skeleton": "Skeleton",
+            "wizard": "Wizard",
+            "dragon": "Dragon",
+            "boss_final": "Dark Lord"
+        },
+        "descriptions": {
+            "goblin": "Small vicious creature with sharp teeth",
+            "orc": "Brutal warrior with immense strength",
+            "skeleton": "Animated remains of an ancient fighter",
+            "wizard": "Master of dark magical arts",
+            "dragon": "Legendary fire-breathing beast",
+            "boss_final": "Supreme master of evil forces"
+        }
+    },
+    "messages": {
+        "combat": {
+            "turn_start": "Your turn begins",
+            "turn_end": "Your turn ends",
+            "card_played": "Card {cardName} played",
+            "insufficient_energy": "Insufficient energy (need {required}, you have {current})",
+            "target_required": "Select a target",
+            "no_valid_targets": "No valid targets available",
+            "victory": "Combat won!",
+            "defeat": "You have been defeated..."
+        },
+        "system": {
+            "game_saved": "Game saved",
+            "game_loaded": "Game loaded",
+            "save_failed": "Save failed",
+            "load_failed": "Load failed",
+            "language_changed": "Language changed to {language}",
+            "settings_saved": "Settings saved",
+            "language_saved": "Language saved"
+        },
+        "errors": {
+            "save_failed": "Unable to save game",
+            "load_failed": "Unable to load game",
+            "file_not_found": "File not found",
+            "invalid_save": "Invalid save file",
+            "network_error": "Network error",
+            "unknown_error": "Unknown error"
+        }
+    },
+    "notifications": {
+        "level_up": "Level up! New level: {level}",
+        "item_found": "Item found: {item}",
+        "quest_completed": "Quest completed: {quest}",
+        "achievement_unlocked": "Achievement unlocked: {achievement}",
+        "new_card": "New card obtained: {card}"
+    },
+    "units": {
+        "health": "HP",
+        "energy": "Energy",
+        "damage": "Damage",
+        "shield": "Shield",
+        "level": "Lvl.",
+        "experience": "Exp",
+        "turn": "Turn",
+        "round": "Round"
+    }
+}

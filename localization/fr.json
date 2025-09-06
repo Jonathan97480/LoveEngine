@@ -1,0 +1,232 @@
+{
+    "meta": {
+        "language": "fr",
+        "version": "1.0",
+        "name": "Français",
+        "author": "GitHub Copilot",
+        "date": "2025-09-02"
+    },
+    "ui": {
+        "menu": {
+            "play": "Jouer",
+            "new_game": "Nouvelle Partie",
+            "continue": "Continuer",
+            "load": "Charger",
+            "load_save": "Charger Partie",
+            "save": "Sauvegarder",
+            "no_saves": "Aucune sauvegarde disponible",
+            "create_save": "Créer une sauvegarde",
+            "options": "Options",
+            "settings": "Paramètres",
+            "credits": "Crédits",
+            "quit": "Quitter",
+            "back": "Retour",
+            "confirm": "Confirmer",
+            "cancel": "Annuler"
+        },
+        "gameplay": {
+            "end_turn": "Fin de Tour",
+            "health": "Vie",
+            "energy": "Énergie",
+            "cards": "Cartes",
+            "hand": "Main",
+            "deck": "Deck",
+            "graveyard": "Cimetière",
+            "discard": "Défausse",
+            "draw": "Piocher",
+            "play": "Jouer",
+            "target": "Cibler",
+            "confirm_play": "Confirmer",
+            "cancel_play": "Annuler"
+        },
+        "combat": {
+            "player_turn": "Votre Tour",
+            "enemy_turn": "Tour Ennemi",
+            "victory": "Victoire !",
+            "defeat": "Défaite...",
+            "damage_dealt": "{damage} dégâts infligés",
+            "damage_taken": "{damage} dégâts reçus",
+            "healing": "+{heal} PV",
+            "shield_gained": "+{shield} Bouclier"
+        },
+        "options": {
+            "language": "Langue",
+            "volume": "Volume",
+            "volume_decrease": "Volume -",
+            "volume_increase": "Volume +",
+            "music": "Musique",
+            "sfx": "Effets Sonores",
+            "fullscreen": "Plein Écran",
+            "debug": "Mode Debug",
+            "save": "Sauvegarder",
+            "resolution": "Résolution",
+            "difficulty": "Difficulté",
+            "auto_save": "Sauvegarde Auto"
+        },
+        "tooltips": {
+            "energy_current": "Énergie: {current}/{max}",
+            "energy_tip": "Utilisée pour jouer des cartes",
+            "health_current": "Vie: {current}/{max}",
+            "health_tip": "Points de vie restants",
+            "shield_current": "Bouclier: {shield}",
+            "shield_tip": "Absorbe les dégâts entrants",
+            "card_cost": "Coût: {cost} énergie",
+            "card_damage": "Dégâts: {damage}",
+            "card_heal": "Soin: {heal}",
+            "card_multitarget": "Cible tous les ennemis",
+            "card_singletarget": "Cible un ennemi"
+        },
+        "shortcuts": {
+            "help_title": "Raccourcis Clavier",
+            "end_turn": "E / Entrée - Finir le tour",
+            "play_card": "1-5 - Jouer la carte en position",
+            "show_cards": "Tab - Afficher toutes les cartes",
+            "show_graveyard": "G - Voir le cimetière",
+            "show_discard": "D - Voir la défausse",
+            "help": "H - Afficher cette aide",
+            "close": "Esc - Fermer les fenêtres"
+        },
+        "common": {
+            "load": "Charger",
+            "save": "Sauvegarder",
+            "delete": "Supprimer",
+            "edit": "Modifier",
+            "create": "Créer",
+            "back": "Retour",
+            "next": "Suivant",
+            "previous": "Précédent",
+            "ok": "OK",
+            "cancel": "Annuler",
+            "confirm": "Confirmer",
+            "yes": "Oui",
+            "no": "Non"
+        }
+    },
+    "cards": {
+        "names": {
+            "carte_001": "Attaque Rapide",
+            "carte_002": "Boule de Feu",
+            "carte_003": "Soin Mineur",
+            "carte_004": "Bouclier",
+            "carte_005": "Épines",
+            "carte_006": "Attaque Puissante",
+            "carte_007": "Soin Majeur",
+            "carte_008": "Drain de Vie",
+            "carte_009": "Météore",
+            "carte_010": "Régénération",
+            "jais_dencre": "J'ai d'Encre",
+            "attaque_rapide": "Attaque Rapide",
+            "fil_dariane": "Fil d'Ariane",
+            "jais_de_couteau": "J'ai de Couteau"
+        },
+        "descriptions": {
+            "carte_001": "Inflige {damage} dégâts à {target}",
+            "carte_002": "Inflige {damage} dégâts à tous les ennemis",
+            "carte_003": "Restaure {heal} points de vie",
+            "carte_004": "Gagne {shield} points de bouclier",
+            "carte_005": "Gagne {thorns} épines qui renvoient les dégâts",
+            "carte_006": "Inflige {damage} dégâts importants à {target}",
+            "carte_007": "Restaure {heal} points de vie importants",
+            "carte_008": "Inflige {damage} dégâts et gagne {heal} PV",
+            "carte_009": "Inflige {damage} dégâts massifs à tous les ennemis",
+            "carte_010": "Gagne {heal} PV par tour pendant {duration} tours",
+            "jais_dencre": "Aveugle l'ennemi, réduisant sa précision",
+            "attaque_rapide": "Attaque rapide qui inflige {damage} dégâts",
+            "fil_dariane": "Permet de retrouver son chemin et gagne de l'énergie",
+            "jais_de_couteau": "Attaque perforante qui ignore le bouclier"
+        },
+        "rarities": {
+            "common": "Commune",
+            "uncommon": "Peu Commune",
+            "rare": "Rare",
+            "epic": "Épique",
+            "legendary": "Légendaire"
+        },
+        "types": {
+            "attack": "Attaque",
+            "spell": "Sort",
+            "defense": "Défense",
+            "utility": "Utilitaire",
+            "healing": "Soin"
+        }
+    },
+    "story": {
+        "intro": {
+            "title": "Le Château Maudit",
+            "text1": "Il était une fois, dans un royaume lointain...",
+            "text2": "Un héros courageux se dressa face aux ténèbres...",
+            "text3": "Le château au sommet de la colline cachait de terribles secrets...",
+            "continue": "Appuyez sur une touche pour continuer"
+        },
+        "chapters": {
+            "chapter1": "Chapitre 1 : L'Arrivée",
+            "chapter2": "Chapitre 2 : Le Village",
+            "chapter3": "Chapitre 3 : La Forêt",
+            "chapter4": "Chapitre 4 : Le Château"
+        }
+    },
+    "enemies": {
+        "names": {
+            "goblin": "Gobelin",
+            "orc": "Orc",
+            "skeleton": "Squelette",
+            "wizard": "Sorcier",
+            "dragon": "Dragon",
+            "boss_final": "Seigneur des Ténèbres"
+        },
+        "descriptions": {
+            "goblin": "Petite créature vicieuse aux dents acérées",
+            "orc": "Guerrier brutal avec une force immense",
+            "skeleton": "Reste animé d'un ancien combattant",
+            "wizard": "Maître des arts magiques obscurs",
+            "dragon": "Bête légendaire crachant le feu",
+            "boss_final": "Maître absolu des forces du mal"
+        }
+    },
+    "messages": {
+        "combat": {
+            "turn_start": "Votre tour commence",
+            "turn_end": "Fin de votre tour",
+            "card_played": "Carte {cardName} jouée",
+            "insufficient_energy": "Énergie insuffisante (besoin de {required}, vous avez {current})",
+            "target_required": "Sélectionnez une cible",
+            "no_valid_targets": "Aucune cible valide disponible",
+            "victory": "Combat gagné !",
+            "defeat": "Vous avez été vaincu..."
+        },
+        "system": {
+            "game_saved": "Partie sauvegardée",
+            "game_loaded": "Partie chargée",
+            "save_failed": "Échec de la sauvegarde",
+            "load_failed": "Échec du chargement",
+            "language_changed": "Langue changée en {language}",
+            "settings_saved": "Paramètres sauvegardés",
+            "language_saved": "Langue sauvegardée"
+        },
+        "errors": {
+            "save_failed": "Impossible de sauvegarder la partie",
+            "load_failed": "Impossible de charger la partie",
+            "file_not_found": "Fichier non trouvé",
+            "invalid_save": "Fichier de sauvegarde invalide",
+            "network_error": "Erreur de connexion",
+            "unknown_error": "Erreur inconnue"
+        }
+    },
+    "notifications": {
+        "level_up": "Niveau supérieur ! Nouveau niveau : {level}",
+        "item_found": "Objet trouvé : {item}",
+        "quest_completed": "Quête terminée : {quest}",
+        "achievement_unlocked": "Succès débloqué : {achievement}",
+        "new_card": "Nouvelle carte obtenue : {card}"
+    },
+    "units": {
+        "health": "PV",
+        "energy": "Énergie",
+        "damage": "Dégâts",
+        "shield": "Bouclier",
+        "level": "Niv.",
+        "experience": "Exp",
+        "turn": "Tour",
+        "round": "Manche"
+    }
+}
