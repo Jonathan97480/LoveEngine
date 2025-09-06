@@ -8,7 +8,6 @@ local resizeSystem = require("libreria.tools.editor.sceneEditor.resizeSystem")
 
 -- NOUVEAU: Utilisation des modules HUD standardisés
 local hud = _G.hud or require("libreria.hud.hud")
-local propertiesPanel = require("libreria.hud.propertiesPanel.propertiesPanel")
 
 -- Variables d'état (seront définies depuis le module principal)
 local currentScene = nil
@@ -17,7 +16,6 @@ local selectedElement = nil
 local showLayerPanel = false
 local showElementPanel = false
 local showLayerPropertiesPanel = false
-local showScenePropertiesPanel = false
 
 -- NOUVEAU: Conteneur principal pour les panneaux
 local propertiesContainer = nil
@@ -51,9 +49,6 @@ function uiRenderer.drawToolbar()
             _G.globalFunction.log.info("Bouton Charger cliqué")
             -- TODO: Implémenter la logique de chargement
         end)
-    else
-        -- Mettre à jour la largeur de la toolbar si la fenêtre a changé
-        mainToolbar.width = love.graphics.getWidth()
     end
 
     -- Mettre à jour le titre si la scène a changé
@@ -218,17 +213,10 @@ function uiRenderer.createPropertiesContainer()
     local containerWidth = config.EDITOR_CONFIG.PANEL_WIDTH
     local containerHeight = screenHeight - config.EDITOR_CONFIG.TOOLBAR_HEIGHT
 
-    -- Utiliser les ratios responsive si disponibles
-    if _G.screenManager then
-        local ratioW, ratioH = _G.screenManager.getRatio()
-        -- Ajuster les dimensions selon les ratios (optionnel, peut être activé si nécessaire)
-        -- containerWidth = containerWidth * ratioW
-        -- containerHeight = containerHeight * ratioH
-    end
-
-    -- Créer le conteneur principal (positionné en TOP RIGHT)
-    propertiesContainer = propertiesPanel.new(screenWidth - containerWidth, config.EDITOR_CONFIG.TOOLBAR_HEIGHT,
-        containerWidth, containerHeight)
+    -- Créer le conteneur principal (positionné en TOP LEFT)
+    propertiesContainer = hud.createPanel(0, config.EDITOR_CONFIG.TOOLBAR_HEIGHT, containerWidth, containerHeight)
+    propertiesContainer:setTitle("Propriétés")
+    propertiesContainer:setBackgroundColor(0.15, 0.15, 0.15, 0.95)
 
     -- Initialiser le contenu du conteneur
     uiRenderer.updatePropertiesContainer()
@@ -242,22 +230,17 @@ function uiRenderer.updatePropertiesContainer()
     propertiesContainer.properties = {}
     local currentY = 10 -- Position Y de départ dans le conteneur
 
-    -- 1. Panneau des propriétés de scène
-    if showScenePropertiesPanel then
-        currentY = uiRenderer.addScenePropertiesToContainer(currentY)
-    end
-
-    -- 2. Panneau des calques
+    -- 1. Panneau des calques
     if showLayerPanel then
         currentY = uiRenderer.addLayerPanelToContainer(currentY)
     end
 
-    -- 3. Panneau des propriétés du calque
+    -- 2. Panneau des propriétés du calque
     if showLayerPropertiesPanel and currentScene and currentScene.layers[selectedLayer] then
         currentY = uiRenderer.addLayerPropertiesToContainer(currentY)
     end
 
-    -- 4. Panneau des propriétés d'élément
+    -- 3. Panneau des propriétés d'élément
     if showElementPanel and selectedElement then
         currentY = uiRenderer.addElementPropertiesToContainer(currentY)
     end
@@ -275,22 +258,15 @@ function uiRenderer.updatePropertiesContainer()
     end
 end
 
--- NOUVEAU: Mettre à jour le panneau des calques (alias pour updatePropertiesContainer)
-function uiRenderer.updateLayerListPanel()
-    uiRenderer.updatePropertiesContainer()
-end
-
 -- NOUVEAU: Ajouter le panneau des calques au conteneur
 function uiRenderer.addLayerPanelToContainer(startY)
-    if not propertiesContainer then return startY end
-
     local currentY = startY
 
-    -- Titre du panneau (supprimé car addCustomProperty n'existe pas)
-    -- propertiesContainer:addCustomProperty("Calques", function(x, y)
-    --     love.graphics.setColor(1, 1, 1, 1)
-    --     love.graphics.print("Calques", x, y + containerScrollOffset)
-    -- end, 20)
+    -- Titre du panneau
+    propertiesContainer:addCustomProperty("Calques", function(x, y)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.print("Calques", x, y + containerScrollOffset)
+    end, 20)
 
     currentY = currentY + 25
 
@@ -329,15 +305,13 @@ end
 
 -- NOUVEAU: Ajouter les propriétés du calque au conteneur
 function uiRenderer.addLayerPropertiesToContainer(startY)
-    if not propertiesContainer then return startY end
-
     local currentY = startY
 
-    -- Titre du panneau (supprimé car addCustomProperty n'existe pas)
-    -- propertiesContainer:addCustomProperty("Propriétés du calque", function(x, y)
-    --     love.graphics.setColor(1, 1, 1, 1)
-    --     love.graphics.print("Propriétés du calque", x, y + containerScrollOffset)
-    -- end, 20)
+    -- Titre du panneau
+    propertiesContainer:addCustomProperty("Propriétés du calque", function(x, y)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.print("Propriétés du calque", x, y + containerScrollOffset)
+    end, 20)
 
     currentY = currentY + 25
 
@@ -364,15 +338,7 @@ function uiRenderer.addLayerPropertiesToContainer(startY)
                 layer.backgroundColor.r or 0.1,
                 layer.backgroundColor.g or 0.1,
                 layer.backgroundColor.b or 0.1,
-                layer.backgroundColor.a or 1.0,
-                function(r, g, b, a)
-                    layer.backgroundColor.r = r
-                    layer.backgroundColor.g = g
-                    layer.backgroundColor.b = b
-                    layer.backgroundColor.a = a
-                    _G.globalFunction.log.info("Couleur de fond du calque modifiée: " ..
-                        r .. ", " .. g .. ", " .. b .. ", " .. a)
-                end)
+                layer.backgroundColor.a or 1.0)
             currentY = currentY + 40
         end
     end
@@ -382,15 +348,13 @@ end
 
 -- NOUVEAU: Ajouter les propriétés d'élément au conteneur
 function uiRenderer.addElementPropertiesToContainer(startY)
-    if not propertiesContainer then return startY end
-
     local currentY = startY
 
-    -- Titre du panneau (supprimé car addCustomProperty n'existe pas)
-    -- propertiesContainer:addCustomProperty("Propriétés d'élément", function(x, y)
-    --     love.graphics.setColor(1, 1, 1, 1)
-    --     love.graphics.print("Propriétés d'élément", x, y + containerScrollOffset)
-    -- end, 20)
+    -- Titre du panneau
+    propertiesContainer:addCustomProperty("Propriétés d'élément", function(x, y)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.print("Propriétés d'élément", x, y + containerScrollOffset)
+    end, 20)
 
     currentY = currentY + 25
 
@@ -420,82 +384,10 @@ function uiRenderer.addElementPropertiesToContainer(startY)
                     selectedElement.properties.color[1] or 1,
                     selectedElement.properties.color[2] or 1,
                     selectedElement.properties.color[3] or 1,
-                    selectedElement.properties.color[4] or 1,
-                    function(r, g, b, a)
-                        selectedElement.properties.color[1] = r
-                        selectedElement.properties.color[2] = g
-                        selectedElement.properties.color[3] = b
-                        selectedElement.properties.color[4] = a
-                        _G.globalFunction.log.info("Couleur de l'élément modifiée: " ..
-                            r .. ", " .. g .. ", " .. b .. ", " .. a)
-                    end)
+                    selectedElement.properties.color[4] or 1)
                 currentY = currentY + 40
             end
         end
-    end
-
-    return currentY + 10
-end
-
--- NOUVEAU: Ajouter les propriétés de scène au conteneur
-function uiRenderer.addScenePropertiesToContainer(startY)
-    if not propertiesContainer then return startY end
-
-    local currentY = startY
-
-    currentY = currentY + 25
-
-    if currentScene then
-        -- Nom de la scène (avec callback pour mettre à jour)
-        propertiesContainer:addTextProperty("Nom", currentScene.name or "Sans nom", true, function(newName)
-            currentScene.name = newName
-            _G.globalFunction.log.info("Nom de la scène modifié: " .. newName)
-        end)
-        currentY = currentY + 30
-
-        -- Largeur de la scène (éditable)
-        propertiesContainer:addTextProperty("Largeur", tostring(currentScene.width or 800), true, function(newWidth)
-            local width = tonumber(newWidth)
-            if width and width >= 100 and width <= 4096 then
-                currentScene.width = width
-                _G.globalFunction.log.info("Largeur de la scène modifiée: " .. width)
-            else
-                _G.globalFunction.log.warn("Largeur invalide: " .. newWidth)
-            end
-        end)
-        currentY = currentY + 30
-
-        -- Hauteur de la scène (éditable)
-        propertiesContainer:addTextProperty("Hauteur", tostring(currentScene.height or 600), true, function(newHeight)
-            local height = tonumber(newHeight)
-            if height and height >= 100 and height <= 4096 then
-                currentScene.height = height
-                _G.globalFunction.log.info("Hauteur de la scène modifiée: " .. height)
-            else
-                _G.globalFunction.log.warn("Hauteur invalide: " .. newHeight)
-            end
-        end)
-        currentY = currentY + 30
-
-        -- Bouton Appliquer les changements
-        propertiesContainer:addButtonProperty("Appliquer", function()
-            _G.globalFunction.log.info("Application des propriétés de scène")
-            -- Les changements sont automatiquement appliqués via les callbacks
-        end)
-        currentY = currentY + 40
-    else
-        -- Message quand aucune scène n'est chargée
-        propertiesContainer:addTextProperty("Statut", "Aucune scène chargée", false)
-        currentY = currentY + 30
-
-        propertiesContainer:addButtonProperty("Créer une scène", function()
-            _G.globalFunction.log.info("Bouton Créer une scène cliqué")
-            if _G.sceneEditor and _G.sceneEditor.newScene then
-                _G.sceneEditor.newScene("Nouvelle Scene")
-                uiRenderer.updatePropertiesContainer()
-            end
-        end)
-        currentY = currentY + 40
     end
 
     return currentY + 10
@@ -543,12 +435,6 @@ function uiRenderer.handleContainerMouse(x, y, button)
             containerScrollOffset = scrollRatio * containerMaxScroll
             containerScrollOffset = math.max(0, math.min(containerMaxScroll, containerScrollOffset))
             return true
-        else
-            -- Déléguer le clic au conteneur de propriétés pour les boutons
-            if propertiesContainer:mousepressed(x, y, button) then
-                _G.globalFunction.log.info("Clic géré par propertiesContainer")
-                return true
-            end
         end
 
         return true
@@ -608,58 +494,6 @@ function uiRenderer.wheelmoved(x, y)
     return false
 end
 
--- Gestion des touches clavier
-function uiRenderer.keypressed(key)
-    _G.globalFunction.log.info("uiRenderer.keypressed appelé: " .. key)
-
-    -- Transmettre les événements clavier au panneau de propriétés si nécessaire
-    if propertiesContainer then
-        propertiesContainer:keypressed(key)
-    end
-
-    -- Raccourcis clavier pour les panneaux
-    if key == "f1" then
-        -- F1 : Toggle panneau des calques
-        showLayerPanel = not showLayerPanel
-        uiRenderer.updatePropertiesContainer()
-        _G.globalFunction.log.info("Panneau des calques togglé: " .. tostring(showLayerPanel))
-        return true
-    elseif key == "f2" then
-        -- F2 : Toggle panneau des propriétés d'élément
-        showElementPanel = not showElementPanel
-        uiRenderer.updatePropertiesContainer()
-        _G.globalFunction.log.info("Panneau des propriétés d'élément togglé: " .. tostring(showElementPanel))
-        return true
-    elseif key == "f3" then
-        -- F3 : Toggle panneau des propriétés de calque
-        showLayerPropertiesPanel = not showLayerPropertiesPanel
-        uiRenderer.updatePropertiesContainer()
-        _G.globalFunction.log.info("Panneau des propriétés de calque togglé: " .. tostring(showLayerPropertiesPanel))
-        return true
-    elseif key == "f4" then
-        -- F4 : Toggle panneau des propriétés de scène
-        showScenePropertiesPanel = not showScenePropertiesPanel
-        uiRenderer.updatePropertiesContainer()
-        _G.globalFunction.log.info("Panneau des propriétés de scène togglé: " .. tostring(showScenePropertiesPanel))
-        return true
-    elseif key == "g" then
-        -- G : Toggle grille
-        config.editorState.gridVisible = not config.editorState.gridVisible
-        _G.globalFunction.log.info("Grille togglée: " .. tostring(config.editorState.gridVisible))
-        return true
-    end
-
-    return false
-end
-
--- Gestion de l'entrée de texte
-function uiRenderer.textinput(text)
-    -- Gérer l'entrée de texte pour les propriétés éditables
-    if propertiesContainer then
-        propertiesContainer:textinput(text)
-    end
-end
-
 -- Fonction principale de rendu
 function uiRenderer.draw()
     uiRenderer.drawToolbar()
@@ -670,7 +504,7 @@ function uiRenderer.draw()
     -- Informations de débogage
     love.graphics.setColor(1, 1, 1, 0.7)
     love.graphics.print(
-        "F1: Calques | F2: Propriétés élément | F3: Propriétés calque | F4: Propriétés scène | G: Grille | Ctrl+N: Nouveau | Ctrl+S: Sauvegarder",
+        "F1: Calques | F2: Propriétés élément | F3: Propriétés calque | G: Grille | Ctrl+N: Nouveau | Ctrl+S: Sauvegarder",
         10,
         love.graphics.getHeight() - 20)
 end
@@ -704,7 +538,7 @@ function uiRenderer.setSelectedLayer(layer)
             -- S'assurer que tous les calques restent visibles
             if not layerObj.visible then
                 _G.globalFunction.log.warn("Calque " ..
-                    i .. " (" .. layerObj.name .. ") était invisible - remise à visible")
+                i .. " (" .. layerObj.name .. ") était invisible - remise à visible")
                 layerObj.visible = true
             end
         end
@@ -728,26 +562,6 @@ end
 function uiRenderer.setShowLayerPropertiesPanel(show)
     showLayerPropertiesPanel = show
     uiRenderer.updatePropertiesContainer()
-end
-
-function uiRenderer.setShowScenePropertiesPanel(show)
-    showScenePropertiesPanel = show
-    uiRenderer.updatePropertiesContainer()
-end
-
--- Fonction de mise à jour appelée chaque frame
-function uiRenderer.update(dt)
-    -- Mettre à jour le timer du curseur pour le clignotement
-    cursorBlinkTimer = cursorBlinkTimer + dt
-    if cursorBlinkTimer >= CURSOR_BLINK_RATE then
-        cursorBlinkTimer = 0
-        cursorVisible = not cursorVisible
-    end
-
-    -- Mettre à jour la toolbar si elle existe
-    if mainToolbar then
-        mainToolbar:update(dt)
-    end
 end
 
 -- Getter pour selectedLayer

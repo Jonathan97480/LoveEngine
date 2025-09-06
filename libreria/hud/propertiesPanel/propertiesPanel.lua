@@ -44,12 +44,14 @@ function propertiesPanel.new(x, y, width, height, title)
     -- @param label string : Label de la propriété
     -- @param value string : Valeur actuelle
     -- @param editable boolean : Si la propriété est éditable
-    function instance:addTextProperty(label, value, editable)
+    -- @param callback function : Fonction appelée lors du changement (optionnel)
+    function instance:addTextProperty(label, value, editable, callback)
         table.insert(self.properties, {
             type = "text",
             label = label,
             value = value or "",
-            editable = editable or false
+            editable = editable or false,
+            callback = callback
         })
     end
 
@@ -58,13 +60,15 @@ function propertiesPanel.new(x, y, width, height, title)
     -- @param value number : Valeur actuelle
     -- @param min number : Valeur minimale
     -- @param max number : Valeur maximale
-    function instance:addNumberProperty(label, value, min, max)
+    -- @param callback function : Fonction appelée lors du changement (optionnel)
+    function instance:addNumberProperty(label, value, min, max, callback)
         table.insert(self.properties, {
             type = "number",
             label = label,
             value = value or 0,
             min = min or -math.huge,
-            max = max or math.huge
+            max = max or math.huge,
+            callback = callback
         })
     end
 
@@ -225,11 +229,32 @@ function propertiesPanel.new(x, y, width, height, title)
         if self.editingField then
             if key == "return" then
                 self.properties[self.editingField].value = self.inputText
+                -- Appeler le callback si défini
+                if self.properties[self.editingField].callback then
+                    self.properties[self.editingField].callback(self.inputText)
+                end
                 self.editingField = nil
             elseif key == "escape" then
                 self.editingField = nil
             elseif key == "backspace" then
                 self.inputText = self.inputText:sub(1, -2)
+            elseif key == "delete" then
+                -- Supprimer le caractère suivant (comme backspace mais vers l'avant)
+                -- Pour l'instant, on garde le même comportement que backspace
+                self.inputText = self.inputText:sub(1, -2)
+            elseif key == "a" and love.keyboard.isDown("lctrl", "rctrl") then
+                -- Ctrl+A : Sélectionner tout (pour l'instant, on vide le champ pour recommencer)
+                self.inputText = ""
+            elseif key == "c" and love.keyboard.isDown("lctrl", "rctrl") then
+                -- Ctrl+C : Copier (non implémenté pour l'instant)
+                -- On pourrait stocker self.inputText dans le presse-papiers
+            elseif key == "v" and love.keyboard.isDown("lctrl", "rctrl") then
+                -- Ctrl+V : Coller (non implémenté pour l'instant)
+                -- On pourrait récupérer le contenu du presse-papiers
+            elseif key == "x" and love.keyboard.isDown("lctrl", "rctrl") then
+                -- Ctrl+X : Couper (non implémenté pour l'instant)
+                -- On pourrait vider le champ
+                self.inputText = ""
             end
         end
     end

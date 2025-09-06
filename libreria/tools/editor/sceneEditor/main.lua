@@ -21,6 +21,7 @@ local dragOffset = { x = 0, y = 0 }
 local showElementPanel = false
 local showLayerPanel = true
 local showLayerPropertiesPanel = false
+local showScenePropertiesPanel = true
 local showFileDialog = false
 
 -- Initialisation
@@ -32,6 +33,7 @@ function sceneEditor.init()
     uiRenderer.setShowLayerPanel(showLayerPanel)
     uiRenderer.setShowElementPanel(showElementPanel)
     uiRenderer.setShowLayerPropertiesPanel(showLayerPropertiesPanel)
+    uiRenderer.setShowScenePropertiesPanel(showScenePropertiesPanel)
 end
 
 -- Mise à jour
@@ -59,6 +61,10 @@ function sceneEditor.mousepressed(x, y, button, istouch, presses)
                 uiRenderer.setCurrentScene(currentScene)
                 uiRenderer.setSelectedLayer(selectedLayer)
                 uiRenderer.setSelectedElement(selectedElement)
+                uiRenderer.updatePropertiesContainer()
+                -- Afficher le panneau des propriétés de scène par défaut
+                showScenePropertiesPanel = true
+                uiRenderer.setShowScenePropertiesPanel(showScenePropertiesPanel)
                 globalFunction.log.info("Nouvelle scène créée: " .. currentScene.name)
                 return
                 -- Bouton Sauvegarder (position 370-430)
@@ -84,6 +90,10 @@ function sceneEditor.mousepressed(x, y, button, istouch, presses)
                     uiRenderer.setCurrentScene(currentScene)
                     uiRenderer.setSelectedLayer(selectedLayer)
                     uiRenderer.setSelectedElement(selectedElement)
+                    uiRenderer.updatePropertiesContainer()
+                    -- Afficher le panneau des propriétés de scène par défaut
+                    showScenePropertiesPanel = true
+                    uiRenderer.setShowScenePropertiesPanel(showScenePropertiesPanel)
                     globalFunction.log.info("Scène chargée: " .. loadedScene.name)
                 else
                     globalFunction.log.warn("Aucune scène trouvée: " .. testSceneName)
@@ -211,6 +221,7 @@ function sceneEditor.newScene(name)
     uiRenderer.setCurrentScene(currentScene)
     uiRenderer.setSelectedLayer(selectedLayer)
     uiRenderer.setSelectedElement(selectedElement)
+    uiRenderer.updatePropertiesContainer()
     return currentScene
 end
 
@@ -222,6 +233,7 @@ function sceneEditor.loadScene(name)
         uiRenderer.setCurrentScene(currentScene)
         uiRenderer.setSelectedLayer(selectedLayer)
         uiRenderer.setSelectedElement(selectedElement)
+        uiRenderer.updatePropertiesContainer()
     end
     return currentScene
 end

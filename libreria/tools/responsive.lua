@@ -26,7 +26,7 @@ local isHover = false;
 -- Initialisation différée de la fenêtre (appelée depuis love.load)
 function screenManager.initWindow()
     if love and love.window and love.window.setMode then
-        love.window.setMode(1280, 720, {
+        love.window.setMode(1920, 1080, {
             fullscreen = screenManager.FullScreen,
             resizable = screenManager.resizable,
             vsync = screenManager.Syncro,
@@ -79,6 +79,10 @@ function screenManager.UpdateRatio(dt)
     x, y = _getRawMouse();
     local __rw2 = screenManager.ratioScreen.width or 1
     local __rh2 = screenManager.ratioScreen.height or 1
+    -- Initialiser screenManager.mouse si nécessaire
+    if not screenManager.mouse then
+        screenManager.mouse = {}
+    end
     screenManager.mouse.X = x / __rw2;
     screenManager.mouse.Y = y / __rh2;
 end

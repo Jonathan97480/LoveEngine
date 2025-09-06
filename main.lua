@@ -157,6 +157,21 @@ if love then
             mousereleasedModeJeu(x, y, button, istouch, presses)
         end
     end
+
+    function love.resize(w, h)
+        if _G.isDevMode then
+            -- Mettre à jour les ratios responsive
+            if _G.screenManager then
+                _G.screenManager.UpdateRatio(0)
+            end
+
+            -- Recréer l'interface de l'éditeur avec les nouvelles dimensions
+            if _G.sceneEditor and _G.sceneEditor.uiRenderer then
+                _G.sceneEditor.uiRenderer.createPropertiesContainer()
+                _G.globalFunction.log.info("Interface redimensionnée: " .. w .. "x" .. h)
+            end
+        end
+    end
 else
     -- Mode hors Love2D (test/console)
     print("LoveEngine: Mode hors Love2D détecté")
@@ -169,6 +184,14 @@ end
 
 function initialiserModeDev()
     _G.globalFunction.log.info("Interface de développement initialisée")
+
+    -- Initialiser la bibliothèque responsive
+    _G.screenManager = require("libreria.tools.responsive")
+    if _G.screenManager then
+        _G.screenManager.initWindow()
+        _G.screenManager.initMouse()
+        _G.globalFunction.log.info("Bibliothèque responsive initialisée")
+    end
 
     -- Initialiser l'éditeur de scènes
     if _G.sceneEditor then
@@ -187,6 +210,11 @@ function initialiserModeDev()
 end
 
 function updateModeDev(dt)
+    -- Mise à jour des ratios responsive
+    if _G.screenManager then
+        _G.screenManager.UpdateRatio(dt)
+    end
+
     -- Mise à jour de l'éditeur de scènes
     if _G.sceneEditor then
         _G.sceneEditor.update(dt)
@@ -196,6 +224,15 @@ end
 function drawModeDev()
     -- Interface de développement
     love.graphics.clear(0.1, 0.1, 0.2) -- Fond bleu foncé pour le mode dev
+
+    -- Appliquer le scaling responsive
+    local ratioW, ratioH = 1, 1
+    if _G.screenManager and _G.screenManager.getRatio then
+        ratioW, ratioH = _G.screenManager.getRatio()
+    end
+
+    love.graphics.push()
+    love.graphics.scale(ratioW, ratioH)
 
     -- Dessiner l'éditeur de scènes si disponible
     if _G.sceneEditor then
@@ -209,6 +246,8 @@ function drawModeDev()
         love.graphics.print("ESC: Quitter", 10, 70)
         love.graphics.print("Éditeur de scènes non chargé", 10, 90)
     end
+
+    love.graphics.pop()
 end
 
 function keypressedModeDev(key, scancode, isrepeat)
@@ -229,23 +268,49 @@ function keypressedModeDev(key, scancode, isrepeat)
 end
 
 function mousepressedModeDev(x, y, button, istouch, presses)
+    -- Appliquer le scaling inverse aux coordonnées de la souris
+    local ratioW, ratioH = 1, 1
+    if _G.screenManager and _G.screenManager.getRatio then
+        ratioW, ratioH = _G.screenManager.getRatio()
+    end
+    local scaledX = x / ratioW
+    local scaledY = y / ratioH
+
     -- Gestion des clics dans l'éditeur de scènes
     if _G.sceneEditor then
-        _G.sceneEditor.mousepressed(x, y, button, istouch, presses)
+        _G.sceneEditor.mousepressed(scaledX, scaledY, button, istouch, presses)
     end
 end
 
 function mousemovedModeDev(x, y, dx, dy, istouch)
+    -- Appliquer le scaling inverse aux coordonnées de la souris
+    local ratioW, ratioH = 1, 1
+    if _G.screenManager and _G.screenManager.getRatio then
+        ratioW, ratioH = _G.screenManager.getRatio()
+    end
+    local scaledX = x / ratioW
+    local scaledY = y / ratioH
+    local scaledDX = dx / ratioW
+    local scaledDY = dy / ratioH
+
     -- Gestion des mouvements de souris dans l'éditeur de scènes
     if _G.sceneEditor then
-        _G.sceneEditor.mousemoved(x, y, dx, dy)
+        _G.sceneEditor.mousemoved(scaledX, scaledY, scaledDX, scaledDY)
     end
 end
 
 function mousereleasedModeDev(x, y, button, istouch, presses)
+    -- Appliquer le scaling inverse aux coordonnées de la souris
+    local ratioW, ratioH = 1, 1
+    if _G.screenManager and _G.screenManager.getRatio then
+        ratioW, ratioH = _G.screenManager.getRatio()
+    end
+    local scaledX = x / ratioW
+    local scaledY = y / ratioH
+
     -- Gestion du relâchement de souris dans l'éditeur de scènes
     if _G.sceneEditor then
-        _G.sceneEditor.mousereleased(x, y, button)
+        _G.sceneEditor.mousereleased(scaledX, scaledY, button)
     end
 end
 
