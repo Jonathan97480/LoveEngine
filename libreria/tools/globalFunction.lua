@@ -32,17 +32,7 @@ globalFunction.log = globalFunction.log or {}
 globalFunction.log._sessionPath = cheminSession
 globalFunction.log.immediateWrite = (config.logs.immediateWrite == nil) and true or config.logs.immediateWrite
 
--- Chargement des icônes de statut (utilise le cache de ressources)
-local iconeBouclier = res.image('img/Actor/Enemy/Hub-Shield2.png')
-local iconeEpine = res.image('img/icon/bonus-epine-icon.png')
-local iconeBonusAttaque = res.image('img/icon/bonuss-attack-icon.png')
 
-local barreVie = {
-    rouge = res.image('img/Actor/Enemy/HudLifeEnemy.png'),
-    bleu = res.image('img/Actor/hero/HudLifeHero.png'),
-    couleurRouge = { 1, 0, 0 },
-    couleurBleu = { 0, 0, 1 },
-}
 
 -- =====================================================================
 -- ANIMATION ET INTERPOLATION
@@ -209,106 +199,6 @@ end
 
 
 -- =====================================================================
--- RENDU ET AFFICHAGE
--- =====================================================================
-
---- Dessine la barre de vie avec statuts
--- @param acteur table : L'acteur avec state.life et state.maxLife
--- @param couleurBarre string : "rouge" ou "bleu"
-globalFunction.drawLifeBarStatus = function(acteur, couleurBarre)
-    if type(acteur) ~= 'table' or type(acteur.state) ~= 'table' then return end
-    local vieMax = tonumber(acteur.state.maxLife) or 1
-    if vieMax <= 0 then vieMax = 1 end
-    local vie = math.max(0, math.min(tonumber(acteur.state.life) or 0, vieMax))
-
-    local couleur = barreVie.couleurRouge
-    local cleCouleur = 'rouge'
-    if couleurBarre == "bleu" then
-        cleCouleur = couleurBarre
-        couleur = barreVie.couleurBleu
-    end
-
-    local configBarreVie = acteur.lifeBarConfig
-    if not configBarreVie then
-        local baseX = (acteur.vector2 and acteur.vector2.x) or 0
-        local baseY = (acteur.vector2 and acteur.vector2.y) or 0
-        configBarreVie = {
-            x = baseX,
-            y = baseY,
-            w = acteur.width or 0,
-            h = acteur.height or 0,
-            position = {
-                x = baseX + 25,
-                y = baseY - 50
-            },
-            size = {
-                w = 336,
-                h = 10
-            }
-        }
-    end
-
-    local vx = configBarreVie.x or 0
-    local vy = configBarreVie.y or 0
-    local w = configBarreVie.w or 0
-    local h = configBarreVie.h or 0
-    local position = configBarreVie.position or { x = vx, y = vy }
-
-    -- Calcule la largeur de dessin (parenthèses sécurisées)
-    local largeurCible = (configBarreVie.size and configBarreVie.size.w) or 336
-    local hauteurCible = (configBarreVie.size and configBarreVie.size.h) or 10
-    local largeurDessin = math.max(0, largeurCible * (vie / vieMax))
-
-    love.graphics.setColor(couleur)
-    love.graphics.rectangle('fill', position.x, position.y + 4, largeurDessin, hauteurCible)
-    love.graphics.setColor(1, 1, 1)
-
-    -- Dessine l'image de la barre de vie à l'échelle cible
-    local image = barreVie[cleCouleur]
-    local largeurImage, hauteurImage = 1, 1
-    if image and type(image.getDimensions) == 'function' then
-        local ok, li, hi = pcall(image.getDimensions, image)
-        if ok and li and hi then largeurImage, hauteurImage = li, hi end
-    end
-    local nouvelleEchelle = { w = largeurCible / math.max(1, largeurImage), h = hauteurCible / math.max(1, hauteurImage) }
-    if image then
-        pcall(function()
-            love.graphics.draw(image, position.x, position.y, 0, nouvelleEchelle.w,
-                nouvelleEchelle.h)
-        end)
-    end
-
-    love.graphics.print(vie .. '/' .. vieMax, vx + (w / 1.8), vy - 48)
-
-    dessinerBonus(acteur, couleur, position)
-end
-
---- Dessine les bonus (bouclier, épine, bonus d'attaque)
--- @param acteur table : L'acteur avec state.shield, state.epine, state.degat
--- @param couleur table : Couleur pour le texte
--- @param position table : Position {x, y}
-local function dessinerBonus(acteur, couleur, position)
-    if not (acteur and acteur.state) then return end
-    -- Icône bouclier
-    if (acteur.state.shield or 0) > 0 then
-        love.graphics.draw(iconeBouclier, position.x - 30, position.y - 20, 0, 1.5, 1.5)
-        local policeAncienne = love.graphics.getFont()
-        local police40 = res.font(40)
-        love.graphics.setFont(police40)
-        love.graphics.print(acteur.state.shield, position.x - 12, position.y - 10)
-        love.graphics.setFont(policeAncienne)
-    end
-    -- Icône épine
-    if (acteur.state.epine or 0) > 0 then
-        love.graphics.draw(iconeEpine, position.x + 30, position.y + 20, 0, 1.5, 1.5)
-    end
-    -- Icône bonus d'attaque
-    if (acteur.state.degat or 0) > 0 then
-        love.graphics.draw(iconeBonusAttaque, position.x + 80, position.y + 20, 0, 1.5, 1.5)
-    end
-end
-
--- =====================================================================
 -- MANIPULATION DE TABLES
 -- =====================================================================
 
@@ -362,7 +252,7 @@ local COULEUR_NIVEAU = {
 }
 
 --- Ajoute une entrée de log
--- @param niveau number : Niveau de log
+-- @param niveau number : Niveau de log (0=OK, 1=INFO, 2=WARN, 3=ERROR)
 -- @param texte string : Texte du message
 local function pousserLog(niveau, texte)
     local info = debug.getinfo(3, "nSl") or {}
@@ -399,19 +289,19 @@ local function pousserLog(niveau, texte)
 end
 
 --- Log OK
--- @param texte string : Message
+-- @param texte string : Message à logger
 globalFunction.log.ok = function(texte) pousserLog(NIVEAU.OK, texte) end
 
 --- Log INFO
--- @param texte string : Message
+-- @param texte string : Message à logger
 globalFunction.log.info = function(texte) pousserLog(NIVEAU.INFO, texte) end
 
 --- Log WARN
--- @param texte string : Message
+-- @param texte string : Message à logger
 globalFunction.log.warn = function(texte) pousserLog(NIVEAU.WARN, texte) end
 
 --- Log ERROR
--- @param texte string : Message
+-- @param texte string : Message à logger
 globalFunction.log.error = function(texte) pousserLog(NIVEAU.ERROR, texte) end
 
 --- Vide les logs
@@ -421,7 +311,7 @@ globalFunction.log.clear = function() globalFunction.log.entries = {} end
 globalFunction.log.toggle = function() globalFunction.log.show = not globalFunction.log.show end
 
 --- Dessine les logs à l'écran
--- @param options table : Options {x, y, w, h, bg, lineHeight}
+-- @param options table : Options d'affichage {x, y, w, h, bg, lineHeight}
 globalFunction.drawLogs = function(options)
     options = options or {}
     if not globalFunction.log.show then return end
@@ -468,8 +358,8 @@ globalFunction.drawLogs = function(options)
 end
 
 --- Exporte les logs vers un fichier
--- @param chemin string : Chemin du fichier (optionnel)
--- @return boolean : True si succès
+-- @param chemin string : Chemin du fichier (optionnel, généré automatiquement si nil)
+-- @return boolean : True si l'export a réussi
 globalFunction.log.exportToFile = function(chemin)
     -- Assure que le répertoire cible existe
     local repertoire = config.logs.dir or "gameLogs"
@@ -772,7 +662,7 @@ globalFunction.safeRequire = globalFunction._safeRequire
 
 --- Debug rapide pour afficher le contenu d'une table
 -- @param tbl table : Table à afficher
--- @return string : Représentation string
+-- @return string : Représentation string de la table
 globalFunction.tstr = function(tbl)
     if type(tbl) ~= "table" then
         return tostring(tbl)
@@ -785,9 +675,9 @@ globalFunction.tstr = function(tbl)
 end
 
 --- Appel sécurisé avec log d'erreur
--- @param fn function : Fonction à appeler
--- @param ... any : Arguments
--- @return any : Résultat ou nil en cas d'erreur
+-- @param fn function : Fonction à appeler de manière sécurisée
+-- @param ... any : Arguments à passer à la fonction
+-- @return any : Résultat de la fonction ou nil en cas d'erreur
 globalFunction.safecall = function(fn, ...)
     local status, resultat = pcall(fn, ...)
     if not status then
