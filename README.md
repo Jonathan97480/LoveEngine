@@ -6,7 +6,35 @@
 
 Un moteur de jeu 2D modulaire développé avec Love2D, offrant un système de bibliothèque complet pour le développement de jeux vidéo.
 
-## 📋 Description
+## � Lancement
+
+LoveEngine supporte deux modes distincts :
+
+### Mode Développement (Par défaut)
+```bash
+love .
+# ou explicitement
+love . --dev
+```
+
+**Interface :**
+- Fond bleu foncé
+- Outils de développement intégrés
+- Console de debug (F1)
+- Éditeur de scènes (F2)
+- Inspecteur d'objets (F3)
+
+### Mode Jeu
+```bash
+love . --game
+```
+
+**Interface :**
+- Fond gris
+- Jeu normal sans outils de développement
+- ESC pour retourner au mode développement
+
+## �📋 Description
 
 LoveEngine est un framework de développement de jeux 2D basé sur Love2D qui fournit une architecture modulaire et extensible. Le projet inclut un système de gestion de ressources, d'interface utilisateur, de sauvegarde, de localisation et bien plus encore.
 
