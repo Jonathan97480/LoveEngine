@@ -37,15 +37,30 @@ love . --dev
 - Éditeur de scènes (F2)
 - Inspecteur d'objets (F3)
 
-### Mode Jeu
+### Mode Éditeur de Scènes
 ```bash
-love . --game
+./run_editor.bat
+# ou
+love . --mode=dev
 ```
 
-**Interface :**
-- Fond gris
-- Jeu normal sans outils de développement
-- ESC pour retourner au mode développement
+**Fonctionnalités :**
+- Création et modification de scènes
+- Système de calques (layers)
+- Éléments : Backgrounds, Sprites, Texte, Boutons, Panneaux
+- Redimensionnement et repositionnement des éléments
+- Sauvegarde automatique en JSON
+- Explorateur d'images intégré
+- Gestion des assets par scène
+
+**Raccourcis :**
+- `Ctrl+N` : Nouvelle scène
+- `Ctrl+S` : Sauvegarder
+- `F1` : Panneau des calques
+- `F2` : Propriétés des éléments
+- `Clic droit` : Ajouter un élément
+- `Molette` : Zoom
+- `G` : Afficher/Masquer la grille
 
 ## �📋 Description
 
@@ -58,6 +73,14 @@ LoveEngine est un framework de développement de jeux 2D basé sur Love2D qui fo
 - **Mode Jeu** - Expérience de jeu pure sans outils de développement
 - **Détection automatique** des arguments de ligne de commande
 - **Basculement fluide** entre les modes (ESC en mode jeu)
+
+### 🎨 Éditeur de Scènes
+- **Création de scènes** - Interface WYSIWYG pour créer des scènes
+- **Système de calques** - Organisation des éléments par calques
+- **Éléments visuels** - Sprites, textes, boutons, panneaux, backgrounds
+- **Gestion d'assets** - Import d'images avec explorateur Windows
+- **Sauvegarde JSON** - Export des scènes au format JSON
+- **Rechargement dynamique** - Chargement des scènes sauvegardées
 
 ### 🛠️ Outils de Base
 - **Gestionnaire de Ressources** (`resource_cache`) - Cache intelligent avec monitoring mémoire
@@ -195,22 +218,46 @@ function love.draw()
 end
 ```
 
-### Création d'une Nouvelle Scène
+### Utilisation de l'Éditeur de Scènes
 ```lua
-local menuScene = {
-    load = function()
-        -- Initialisation de la scène menu
-    end,
-    update = function(dt)
-        -- Logique de mise à jour
-    end,
-    draw = function()
-        -- Rendu de la scène
-    end
-}
+-- Créer une nouvelle scène
+local scene = _G.sceneEditor.newScene("MaScene")
 
-_G.sceneManager.register("menu", menuScene)
-_G.sceneManager.switch("menu")
+-- Ajouter des éléments
+_G.sceneEditor.addElement("background", 0, 0)
+_G.sceneEditor.addElement("sprite", 100, 100)
+_G.sceneEditor.addElement("text", 200, 50)
+
+-- Sauvegarder la scène
+_G.sceneEditor.saveCurrentScene()
+
+-- Charger une scène dans le jeu
+_G.sceneLoader.loadScene("MaScene")
+_G.sceneLoader.drawScene("MaScene")
+```
+
+### Structure d'une Scène JSON
+```json
+{
+  "name": "MaScene",
+  "width": 800,
+  "height": 600,
+  "layers": [
+    {
+      "name": "Background",
+      "elements": [
+        {
+          "type": "background",
+          "x": 0, "y": 0,
+          "width": 800, "height": 600,
+          "properties": {
+            "color": [0.5, 0.7, 1, 1]
+          }
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ## 🛠️ Technologies Utilisées

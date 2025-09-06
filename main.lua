@@ -144,6 +144,14 @@ end
 function initialiserModeDev()
     _G.globalFunction.log.info("Interface de développement initialisée")
 
+    -- Initialiser l'éditeur de scènes
+    if _G.sceneEditor then
+        _G.sceneEditor.init()
+        _G.globalFunction.log.info("Éditeur de scènes initialisé")
+    else
+        _G.globalFunction.log.warn("Éditeur de scènes non disponible")
+    end
+
     -- Interface de développement (à implémenter)
     -- Ici on pourra charger les outils de développement :
     -- - Éditeur de scènes
@@ -153,36 +161,52 @@ function initialiserModeDev()
 end
 
 function updateModeDev(dt)
-    -- Logique de mise à jour du mode dev
+    -- Mise à jour de l'éditeur de scènes
+    if _G.sceneEditor then
+        _G.sceneEditor.update(dt)
+    end
 end
 
 function drawModeDev()
     -- Interface de développement
     love.graphics.clear(0.1, 0.1, 0.2) -- Fond bleu foncé pour le mode dev
 
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("MODE DÉVELOPPEMENT", 10, 10)
-    love.graphics.print("LoveEngine v1.0", 10, 30)
-    love.graphics.print("F1: Toggle Console | F2: Scene Editor | F3: Object Inspector", 10, 50)
-    love.graphics.print("ESC: Quitter", 10, 70)
-
-    -- TODO: Implémenter l'interface complète des outils
+    -- Dessiner l'éditeur de scènes si disponible
+    if _G.sceneEditor then
+        _G.sceneEditor.draw()
+    else
+        -- Interface par défaut
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print("MODE DÉVELOPPEMENT", 10, 10)
+        love.graphics.print("LoveEngine v1.0", 10, 30)
+        love.graphics.print("F1: Toggle Console | F2: Scene Editor | F3: Object Inspector", 10, 50)
+        love.graphics.print("ESC: Quitter", 10, 70)
+        love.graphics.print("Éditeur de scènes non chargé", 10, 90)
+    end
 end
 
 function keypressedModeDev(key, scancode, isrepeat)
+    -- Gestion des raccourcis de l'éditeur de scènes
+    if _G.sceneEditor then
+        _G.sceneEditor.keypressed(key)
+    end
+
     if key == "escape" then
         love.event.quit()
     elseif key == "f1" then
         _G.globalFunction.log.info("Toggle Console (TODO)")
     elseif key == "f2" then
-        _G.globalFunction.log.info("Scene Editor (TODO)")
+        _G.globalFunction.log.info("Scene Editor activé via F2")
     elseif key == "f3" then
         _G.globalFunction.log.info("Object Inspector (TODO)")
     end
 end
 
 function mousepressedModeDev(x, y, button, istouch, presses)
-    -- Gestion des clics dans l'interface dev
+    -- Gestion des clics dans l'éditeur de scènes
+    if _G.sceneEditor then
+        _G.sceneEditor.mousepressed(x, y, button, istouch, presses)
+    end
 end
 
 -- =====================================================================
