@@ -300,9 +300,13 @@ function uiRenderer.setSelectedLayer(layer)
 
     selectedLayer = layer
     -- Masquer tous les autres calques pour se concentrer sur le calque actif
+    -- Mais garder le premier calque (background) toujours visible
     if currentScene then
         for i, otherLayer in ipairs(currentScene.layers) do
-            if i ~= layer then
+            if i == 1 then
+                -- Le premier calque (background) reste toujours visible
+                otherLayer.visible = true
+            elseif i ~= layer then
                 otherLayer.visible = false
             else
                 otherLayer.visible = true

@@ -238,6 +238,8 @@ function sceneEditor.addLayer(name)
     table.insert(currentScene.layers, newLayer)
     selectedLayer = #currentScene.layers
     uiRenderer.setSelectedLayer(selectedLayer)
+    -- Mettre à jour explicitement le panneau des calques
+    uiRenderer.updateLayerListPanel()
 end
 
 -- Gestion des éléments
