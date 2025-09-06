@@ -19,7 +19,7 @@ local selectedElement = nil
 local isDragging = false
 local dragOffset = { x = 0, y = 0 }
 local showElementPanel = false
-local showLayerPanel = false
+local showLayerPanel = true
 local showLayerPropertiesPanel = false
 local showFileDialog = false
 
@@ -99,12 +99,17 @@ function sceneEditor.mousepressed(x, y, button, istouch, presses)
 
         -- Vérifier les poignées de redimensionnement
         if currentScene then
-            local handle = resizeSystem.getResizeHandle(x, y, currentScene)
+            globalFunction.log.debug("Vérification poignées - Souris: (" .. x .. ", " .. y .. ")")
+            local currentSelectedLayer = uiRenderer.getSelectedLayer() or selectedLayer
+            local handle = resizeSystem.getResizeHandle(x, y, currentScene, currentSelectedLayer)
             if handle then
-                globalFunction.log.debug("Démarrage redimensionnement avec poignée: " .. handle)
-                resizeSystem.startResize(handle, x, y, currentScene)
+                globalFunction.log.info("Démarrage redimensionnement avec poignée: " ..
+                    handle .. " à (" .. x .. ", " .. y .. ")")
+                resizeSystem.startResize(handle, x, y, currentScene, currentSelectedLayer)
                 globalFunction.log.debug("startResize terminé, isResizing=" .. tostring(resizeSystem.isResizing()))
                 return
+            else
+                globalFunction.log.debug("Aucune poignée détectée à (" .. x .. ", " .. y .. ")")
             end
         end
 
@@ -114,6 +119,7 @@ function sceneEditor.mousepressed(x, y, button, istouch, presses)
             local adjustedY = y - config.EDITOR_CONFIG.TOOLBAR_HEIGHT
             local worldX, worldY = utils.screenToWorld(x, adjustedY)
             selectedElement = nil
+            local currentSelectedLayer = uiRenderer.getSelectedLayer() or selectedLayer
 
             for i, layer in ipairs(currentScene.layers) do
                 if layer.visible and not layer.locked then
@@ -121,7 +127,8 @@ function sceneEditor.mousepressed(x, y, button, istouch, presses)
                         if worldX >= element.x and worldX <= element.x + element.width and
                             worldY >= element.y and worldY <= element.y + element.height then
                             selectedElement = element
-                            selectedLayer = i
+                            selectedLayer = i              -- Update main.lua's selectedLayer
+                            uiRenderer.setSelectedLayer(i) -- Sync uiRenderer
                             isDragging = true
                             dragOffset.x = worldX - element.x
                             dragOffset.y = worldY - element.y
@@ -137,8 +144,9 @@ function sceneEditor.mousepressed(x, y, button, istouch, presses)
         local adjustedY = y - config.EDITOR_CONFIG.TOOLBAR_HEIGHT
         local worldX, worldY = utils.screenToWorld(x, adjustedY)
         local newElement = dataStructures.createElement(config.ELEMENT_TYPES.SPRITE, worldX, worldY)
-        if currentScene and currentScene.layers[selectedLayer] then
-            table.insert(currentScene.layers[selectedLayer].elements, newElement)
+        local currentSelectedLayer = uiRenderer.getSelectedLayer() or selectedLayer
+        if currentScene and currentScene.layers[currentSelectedLayer] then
+            table.insert(currentScene.layers[currentSelectedLayer].elements, newElement)
             selectedElement = newElement
             uiRenderer.setSelectedElement(selectedElement)
         end
@@ -172,7 +180,8 @@ function sceneEditor.mousemoved(x, y, dx, dy)
     elseif resizeSystem.isResizing() then
         globalFunction.log.debug("Appel de applyResize avec dx=" ..
             dx .. ", dy=" .. dy .. ", isResizing=" .. tostring(resizeSystem.isResizing()))
-        resizeSystem.applyResize(dx, dy, currentScene)
+        local currentSelectedLayer = uiRenderer.getSelectedLayer() or selectedLayer
+        resizeSystem.applyResize(dx, dy, currentScene, currentSelectedLayer)
         globalFunction.log.debug("applyResize terminé")
     else
         globalFunction.log.debug("Pas en mode redimensionnement, isResizing=" .. tostring(resizeSystem.isResizing()))
@@ -222,16 +231,68 @@ function sceneEditor.saveScene(scene)
     return sceneManager.saveScene(scene or currentScene)
 end
 
+-- Fonction helper pour vérifier si un nom de calque existe déjà
+function sceneEditor.layerNameExists(name)
+    if not currentScene then return false end
+
+    for _, layer in ipairs(currentScene.layers) do
+        if layer.name == name then
+            return true
+        end
+    end
+    return false
+end
+
 -- Gestion des calques
 function sceneEditor.addLayer(name)
     if not currentScene then return end
 
-    local layerName = name or ("Calque " .. (#currentScene.layers + 1))
+    local layerName = name
+    if not layerName then
+        -- Générer un nom unique pour éviter les doublons
+        local baseName = "Calque "
+        local counter = 1
+        layerName = baseName .. counter
+
+        -- Vérifier si le nom existe déjà
+        while sceneEditor.layerNameExists(layerName) do
+            counter = counter + 1
+            layerName = baseName .. counter
+        end
+    else
+        -- Si un nom est fourni, vérifier quand même s'il existe
+        if sceneEditor.layerNameExists(layerName) then
+            _G.globalFunction.log.warn("Un calque avec le nom '" .. layerName .. "' existe déjà")
+            -- Générer un nom unique en ajoutant un suffixe
+            local counter = 1
+            local originalName = layerName
+            layerName = originalName .. " (" .. counter .. ")"
+
+            while sceneEditor.layerNameExists(layerName) do
+                counter = counter + 1
+                layerName = originalName .. " (" .. counter .. ")"
+            end
+            _G.globalFunction.log.info("Nouveau nom généré: '" .. layerName .. "'")
+        end
+    end
+
     local newLayer = {
         id = #currentScene.layers + 1,
         name = layerName,
         visible = true,
         locked = false,
+        alpha = 1.0,
+        backgroundColor = {
+            r = 0.1 + (#currentScene.layers * 0.1), -- Couleur différente pour chaque calque
+            g = 0.2 + (#currentScene.layers * 0.1),
+            b = 0.3 + (#currentScene.layers * 0.1),
+            a = 1.0
+        },
+        -- Propriétés de position et taille du calque
+        x = 0,
+        y = 0,
+        width = currentScene.width,
+        height = currentScene.height,
         elements = {}
     }
 
@@ -290,6 +351,10 @@ function sceneEditor.keypressed(key)
         uiRenderer.setSelectedLayer(selectedLayer)
         uiRenderer.setSelectedElement(selectedElement)
         globalFunction.log.info("Nouvelle scène créée: " .. currentScene.name)
+    elseif key == "l" then
+        -- L : Ajouter un nouveau calque
+        sceneEditor.addLayer()
+        globalFunction.log.info("Nouveau calque ajouté avec raccourci L")
     end
 end
 

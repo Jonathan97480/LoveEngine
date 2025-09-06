@@ -81,6 +81,8 @@ end
 
 -- Dessin d'un élément
 function uiRenderer.drawElement(element, isSelectedLayer, layerAlpha)
+    _G.globalFunction.log.info("drawElement appelé pour élément type: " ..
+        (element.type or "unknown") .. ", position: " .. element.x .. "," .. element.y)
     local x, y = utils.worldToScreen(element.x, element.y)
     y = y + config.EDITOR_CONFIG.TOOLBAR_HEIGHT -- Décalage sous la barre d'outils
     local w, h = element.width * config.editorState.zoom, element.height * config.editorState.zoom
@@ -123,40 +125,68 @@ end
 function uiRenderer.drawScene()
     if not currentScene then return end
 
-    -- Fond de la scène (utilise la couleur du calque actif si disponible)
-    local bgColor = { 0.1, 0.1, 0.1, 1 } -- Couleur par défaut
-    if currentScene.layers[selectedLayer] and currentScene.layers[selectedLayer].backgroundColor then
-        local layerColor = currentScene.layers[selectedLayer].backgroundColor
-        local layerAlpha = currentScene.layers[selectedLayer].alpha or 1.0
-        bgColor = {
-            layerColor.r or 0.1,
-            layerColor.g or 0.1,
-            layerColor.b or 0.1,
-            (layerColor.a or 1) * layerAlpha
-        }
-    end
-    love.graphics.setColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
-
+    -- Fond de la scène (taille fixe de la scène)
+    love.graphics.setColor(0.05, 0.05, 0.05, 1)           -- Fond sombre pour la scène
     local sceneX, sceneY = utils.worldToScreen(0, 0)
     sceneY = sceneY + config.EDITOR_CONFIG.TOOLBAR_HEIGHT -- Décalage sous la barre d'outils
     local sceneW, sceneH = currentScene.width * config.editorState.zoom, currentScene.height * config.editorState.zoom
     love.graphics.rectangle("fill", sceneX, sceneY, sceneW, sceneH)
 
-    -- Bordure de la scène
-    love.graphics.setColor(1, 1, 0, 1)
+    -- Bordure de la scène (jaune pour indiquer la taille fixe)
+    love.graphics.setColor(1, 1, 0, 0.5)
     love.graphics.rectangle("line", sceneX, sceneY, sceneW, sceneH)
 
-    -- Dessiner les éléments de chaque calque
+    -- Dessiner les calques avec leurs propres dimensions
     for i, layer in ipairs(currentScene.layers) do
         if layer.visible then
+            -- Position et taille du calque
+            local layerX, layerY = utils.worldToScreen(layer.x, layer.y)
+            layerY = layerY + config.EDITOR_CONFIG.TOOLBAR_HEIGHT
+            local layerW, layerH = layer.width * config.editorState.zoom, layer.height * config.editorState.zoom
+
+            -- Fond du calque
+            if layer.backgroundColor then
+                local layerColor = layer.backgroundColor
+                local layerAlpha = layer.alpha or 1.0
+                love.graphics.setColor(
+                    layerColor.r or 0.1,
+                    layerColor.g or 0.1,
+                    layerColor.b or 0.1,
+                    (layerColor.a or 1) * layerAlpha
+                )
+                love.graphics.rectangle("fill", layerX, layerY, layerW, layerH)
+            end
+
+            -- Bordure du calque (plus visible pour le calque sélectionné)
+            if i == selectedLayer then
+                love.graphics.setColor(1, 0, 0, 1)         -- Rouge pour le calque sélectionné
+            else
+                love.graphics.setColor(0.5, 0.5, 0.5, 0.5) -- Gris pour les autres calques
+            end
+            love.graphics.rectangle("line", layerX, layerY, layerW, layerH)
+
+            -- Dessiner les éléments du calque
             for j, element in ipairs(layer.elements) do
-                uiRenderer.drawElement(element, i == selectedLayer, layer.alpha or 1.0)
+                -- Ajuster la position des éléments par rapport au calque
+                local adjustedElement = {
+                    type = element.type,
+                    x = element.x + layer.x,
+                    y = element.y + layer.y,
+                    width = element.width,
+                    height = element.height,
+                    rotation = element.rotation,
+                    scaleX = element.scaleX,
+                    scaleY = element.scaleY,
+                    visible = element.visible,
+                    properties = element.properties
+                }
+                uiRenderer.drawElement(adjustedElement, i == selectedLayer, layer.alpha or 1.0)
             end
         end
     end
 
-    -- Dessiner les poignées de redimensionnement
-    resizeSystem.drawResizeHandles(currentScene)
+    -- Dessiner les poignées de redimensionnement seulement pour le calque sélectionné
+    resizeSystem.drawResizeHandles(currentScene, selectedLayer)
 end
 
 -- Dessin des panneaux (NOUVEAU: utilise le module HUD standardisé)
@@ -204,10 +234,31 @@ function uiRenderer.updateLayerListPanel()
 
     layerListPanel.properties = {}
     if currentScene then
+        -- Ajouter un bouton pour créer un nouveau calque
+        layerListPanel:addButtonProperty("Nouveau calque", function()
+            _G.globalFunction.log.info("Bouton Nouveau calque cliqué")
+            if _G.sceneEditor and _G.sceneEditor.addLayer then
+                _G.sceneEditor.addLayer()
+                uiRenderer.updateLayerListPanel() -- Rafraîchir la liste
+                _G.globalFunction.log.info("Nouveau calque ajouté depuis le panneau")
+            else
+                _G.globalFunction.log.error("_G.sceneEditor ou addLayer non disponible")
+            end
+        end)
+
         for i, layer in ipairs(currentScene.layers) do
-            -- Afficher simplement le nom du calque sans indicateur spécial pour les verrouillés
-            local layerName = layer.name
-            layerListPanel:addTextProperty("Calque " .. i, layerName, false)
+            -- Créer un bouton pour chaque calque avec indicateur de sélection
+            local buttonText = layer.name
+            if i == selectedLayer then
+                buttonText = "▶ " .. buttonText .. " ◀" -- Indicateur visuel pour le calque sélectionné
+            end
+
+            layerListPanel:addButtonProperty(buttonText, function()
+                _G.globalFunction.log.info("Sélection du calque: " .. layer.name)
+                uiRenderer.setSelectedLayer(i)
+                -- Rafraîchir le panneau après la sélection
+                uiRenderer.updateLayerListPanel()
+            end)
         end
     end
 end
@@ -250,20 +301,23 @@ function uiRenderer.updateLayerPropertiesPanel()
         _G.globalFunction.log.info("Alpha du calque modifié: " .. value)
     end)
 
-    if layer.backgroundColor then
-        layerPropertiesPanel:addColorProperty("Couleur",
-            layer.backgroundColor.r or 0.5,
-            layer.backgroundColor.g or 0.5,
-            layer.backgroundColor.b or 0.5,
-            layer.backgroundColor.a or 1,
-            function(r, g, b, a)
-                layer.backgroundColor.r = r
-                layer.backgroundColor.g = g
-                layer.backgroundColor.b = b
-                layer.backgroundColor.a = a
-                _G.globalFunction.log.info("Couleur du calque modifiée: " .. r .. ", " .. g .. ", " .. b .. ", " .. a)
-            end)
+    -- Initialiser backgroundColor si elle n'existe pas
+    if not layer.backgroundColor then
+        layer.backgroundColor = { r = 0.1, g = 0.1, b = 0.1, a = 1.0 }
     end
+
+    layerPropertiesPanel:addColorProperty("Couleur",
+        layer.backgroundColor.r or 0.5,
+        layer.backgroundColor.g or 0.5,
+        layer.backgroundColor.b or 0.5,
+        layer.backgroundColor.a or 1,
+        function(r, g, b, a)
+            layer.backgroundColor.r = r
+            layer.backgroundColor.g = g
+            layer.backgroundColor.b = b
+            layer.backgroundColor.a = a
+            _G.globalFunction.log.info("Couleur du calque modifiée: " .. r .. ", " .. g .. ", " .. b .. ", " .. a)
+        end)
 
     layerPropertiesPanel:addTextProperty("Éléments", tostring(#layer.elements), false)
 end
@@ -298,21 +352,32 @@ function uiRenderer.setSelectedLayer(layer)
         end
     end
 
-    selectedLayer = layer
-    -- Masquer tous les autres calques pour se concentrer sur le calque actif
-    -- Mais garder le premier calque (background) toujours visible
+    -- Log avant la sélection
     if currentScene then
-        for i, otherLayer in ipairs(currentScene.layers) do
-            if i == 1 then
-                -- Le premier calque (background) reste toujours visible
-                otherLayer.visible = true
-            elseif i ~= layer then
-                otherLayer.visible = false
-            else
-                otherLayer.visible = true
+        _G.globalFunction.log.debug("Avant sélection - Calque " .. layer .. " visible: " ..
+            tostring(currentScene.layers[layer] and currentScene.layers[layer].visible))
+    end
+
+    selectedLayer = layer
+
+    -- Vérification RENFORCÉE: Ne JAMAIS modifier la visibilité des calques
+    if currentScene then
+        for i, layerObj in ipairs(currentScene.layers) do
+            -- S'assurer que tous les calques restent visibles
+            if not layerObj.visible then
+                _G.globalFunction.log.warn("Calque " ..
+                    i .. " (" .. layerObj.name .. ") était invisible - remise à visible")
+                layerObj.visible = true
             end
         end
     end
+
+    -- Log après la sélection
+    if currentScene then
+        _G.globalFunction.log.debug("Après sélection - Calque " .. layer .. " visible: " ..
+            tostring(currentScene.layers[layer] and currentScene.layers[layer].visible))
+    end
+
     -- Mettre à jour les panneaux
     uiRenderer.updateLayerListPanel()
     uiRenderer.updateLayerPropertiesPanel()
@@ -444,38 +509,40 @@ function uiRenderer.mousepressed(x, y, button)
         _G.globalFunction.log.info("Clic géré par layerListPanel")
         -- Gérer la sélection de calque
         if currentScene then
-            local propY = layerListPanel.y + 30 -- Position de départ des propriétés
+            local propY = layerListPanel.y + 30                       -- Position de départ des propriétés
+            local lineHeight = layerListPanel.config.lineHeight or 25 -- Valeur par défaut si non définie
             for i, prop in ipairs(layerListPanel.properties) do
-                if x >= layerListPanel.x + 10 and x <= layerListPanel.x + layerListPanel.width - 10 and
-                    y >= propY - 5 and y <= propY + 20 then
-                    -- Extraire l'index du calque depuis le label
-                    local layerIndex = tonumber(prop.label:match("Calque (%d+)"))
-                    if layerIndex and layerIndex >= 1 and layerIndex <= #currentScene.layers then
-                        local targetLayer = currentScene.layers[layerIndex]
+                -- Zone de clic correspondant exactement à celle du propertiesPanel pour les boutons
+                if x >= layerListPanel.x + 50 and x <= layerListPanel.x + layerListPanel.width - 10 and
+                    y >= propY - 2 and y <= propY + 18 then
+                    -- Le bouton "Nouveau calque" est à l'index 1, les calques commencent à l'index 2
+                    if i == 1 then
+                        -- C'est le bouton "Nouveau calque", on ne fait rien pour la sélection
+                        _G.globalFunction.log.info("Clic sur bouton Nouveau calque")
+                    else
+                        -- C'est un calque : l'index dans currentScene.layers est i-1
+                        local layerIndex = i - 1
+                        if layerIndex >= 1 and layerIndex <= #currentScene.layers then
+                            local targetLayer = currentScene.layers[layerIndex]
 
-                        -- Vérifier si le calque est verrouillé et n'est pas le calque actif
-                        if targetLayer.locked and layerIndex ~= selectedLayer then
-                            _G.globalFunction.log.info("Calque verrouillé - sélection impossible: " .. targetLayer.name)
-                            return true -- Bloquer la sélection
-                        end
-
-                        selectedLayer = layerIndex
-                        _G.globalFunction.log.info("Calque sélectionné: " ..
-                            targetLayer.name .. " (index: " .. layerIndex .. ")")
-                        -- Masquer tous les autres calques pour se concentrer sur le calque actif
-                        for j, otherLayer in ipairs(currentScene.layers) do
-                            if j ~= layerIndex then
-                                otherLayer.visible = false
-                            else
-                                otherLayer.visible = true
+                            -- Vérifier si le calque est verrouillé et n'est pas le calque actif
+                            if targetLayer.locked and layerIndex ~= selectedLayer then
+                                _G.globalFunction.log.info("Calque verrouillé - sélection impossible: " ..
+                                targetLayer.name)
+                                return true -- Bloquer la sélection
                             end
+
+                            selectedLayer = layerIndex
+                            _G.globalFunction.log.info("Calque sélectionné: " ..
+                                targetLayer.name .. " (index: " .. layerIndex .. ")")
+                            -- NE PAS masquer les autres calques - tous doivent rester visibles
+                            uiRenderer.updateLayerListPanel()
+                            uiRenderer.updateLayerPropertiesPanel()
+                            break
                         end
-                        uiRenderer.updateLayerListPanel()
-                        uiRenderer.updateLayerPropertiesPanel()
-                        break
                     end
                 end
-                propY = propY + layerListPanel.config.lineHeight
+                propY = propY + lineHeight
             end
         end
         return true
@@ -503,6 +570,11 @@ function uiRenderer.keypressed(key)
     if elementPropertiesPanel then
         elementPropertiesPanel:keypressed(key)
     end
+end
+
+-- Getter pour selectedLayer
+function uiRenderer.getSelectedLayer()
+    return selectedLayer
 end
 
 return uiRenderer

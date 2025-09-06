@@ -108,6 +108,17 @@ function propertiesPanel.new(x, y, width, height, title)
         })
     end
 
+    --- Ajoute une propriété bouton
+    -- @param label string : Label du bouton
+    -- @param callback function : Fonction appelée lors du clic
+    function instance:addButtonProperty(label, callback)
+        table.insert(self.properties, {
+            type = "button",
+            label = label,
+            callback = callback
+        })
+    end
+
     --- Met à jour le panneau
     -- @param dt number : Delta time
     function instance:update(dt)
@@ -182,6 +193,15 @@ function propertiesPanel.new(x, y, width, height, title)
                     prop.value = colors[nextIndex]
                     if prop.callback then
                         prop.callback(prop.value.r, prop.value.g, prop.value.b, prop.value.a)
+                    end
+                    return true
+                end
+            elseif prop.type == "button" then
+                -- Zone du bouton
+                if mouseX >= self.x + 50 and mouseX <= self.x + self.width - 10 and
+                    mouseY >= propY - 2 and mouseY <= propY + 18 then
+                    if prop.callback then
+                        prop.callback()
                     end
                     return true
                 end
@@ -292,6 +312,12 @@ function propertiesPanel.new(x, y, width, height, title)
                 -- Slider handle
                 love.graphics.setColor(self.config.textColor)
                 love.graphics.rectangle("line", self.x + 90 + 80 * prop.value - 3, propY - 4, 6, 10)
+            elseif prop.type == "button" then
+                -- Bouton
+                love.graphics.setColor(self.config.buttonColor)
+                love.graphics.rectangle("fill", self.x + 50, propY - 2, self.width - 60, 18)
+                love.graphics.setColor(self.config.textColor)
+                love.graphics.print(prop.label, self.x + 55, propY)
             end
 
             propY = propY + self.config.lineHeight

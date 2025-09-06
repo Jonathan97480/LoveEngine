@@ -18,6 +18,11 @@ function dataStructures.createNewScene(name)
                 locked = false,
                 alpha = 1.0,
                 backgroundColor = { r = 0.1, g = 0.1, b = 0.1, a = 1.0 },
+                -- Propriétés de position et taille du calque
+                x = 0,
+                y = 0,
+                width = config.EDITOR_CONFIG.DEFAULT_SCENE_SIZE.width,
+                height = config.EDITOR_CONFIG.DEFAULT_SCENE_SIZE.height,
                 elements = {}
             }
         },
