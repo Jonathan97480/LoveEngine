@@ -261,3 +261,24 @@ end
 - **Ajouter des exemples** quand nécessaire
 
 Ces instructions doivent être suivies pour maintenir la structure modulaire et éviter les conflits de noms ou les chargements redondants.
+
+## Règles de Gestion des Commits
+
+### Commits sur Demande Uniquement
+- **NE PAS faire de commits automatiquement** : Attendre explicitement la demande de l'utilisateur
+- **Demande explicite requise** : L'utilisateur doit demander "commit" ou "git commit" pour valider les changements
+- **Pas d'initiative** : Ne pas proposer ou effectuer de commits sans demande préalable
+- **Confirmation obligatoire** : Toujours demander confirmation avant tout commit
+
+### Workflow de Commit
+```markdown
+1. Modifications terminées
+2. Attendre demande explicite de l'utilisateur
+3. Demander confirmation du message de commit
+4. Effectuer le commit uniquement après validation
+```
+
+### Exceptions
+- **Commits d'urgence** : Seulement si demandé explicitement par l'utilisateur
+- **Corrections critiques** : Toujours attendre validation avant commit
+- **Messages de commit** : Attendre approbation du message par l'utilisateur
