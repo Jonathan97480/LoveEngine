@@ -94,4 +94,89 @@ Les modules suivants sont internes à `libreria` et ne doivent pas être utilis�
 - **Pour les fichiers dans `libreria/`** : Utiliser des `require` internes locaux pour charger les dépendances, sans utiliser les variables globales `_G`. Exemple : `local hud = require("libreria/hud/hud")`.
 - **Pour les fichiers hors de `libreria/`** : Utiliser automatiquement les variables globales définies dans `globals.lua` au lieu de faire des `require` directs. Cela assure une cohérence et évite les duplications de chargement.
 
+## Conventions de Nommage Lua
+
+**Respecter strictement les conventions de nommage Lua recommandées :**
+
+### Variables et Fonctions
+- **Variables locales** : `camelCase` (ex: `local myVariable = 42`)
+- **Variables globales** : `PascalCase` ou préfixées (ex: `MyGlobalVar`)
+- **Fonctions** : `camelCase` (ex: `function myFunction()`)
+- **Constantes** : `SCREAMING_SNAKE_CASE` (ex: `MAX_SIZE = 100`)
+
+### Modules et Fichiers
+- **Noms de fichiers** : `camelCase.lua` (ex: `myModule.lua`)
+- **Noms de modules** : `camelCase` (ex: `local myModule = {}`)
+- **Fonctions d'export** : `camelCase` (ex: `function module.initGame()`)
+
+### Correction Automatique
+- **Détecter et corriger** automatiquement tout nommage non conforme aux conventions Lua
+- **Variables avec underscores inappropriés** : Convertir `my_variable` → `myVariable`
+- **Fonctions PascalCase** : Convertir `MyFunction` → `myFunction` (sauf constructeurs)
+- **Constantes camelCase** : Convertir `maxSize` → `MAX_SIZE`
+- **Fichiers avec underscores** : Préférer `myModule.lua` à `my_module.lua`
+
+### Exemples de Corrections
+```lua
+-- AVANT (incorrect)
+local my_variable = 42
+function My_Function()
+local MAX_size = 100
+
+-- APRÈS (correct)
+local myVariable = 42
+function myFunction()
+local MAX_SIZE = 100
+```
+
+## Documentation des Fonctions
+
+**Toutes les fonctions doivent être documentées selon le standard LDoc :**
+
+### Format Obligatoire
+```lua
+--- Description courte de la fonction
+-- @param nomParam type : Description du paramètre
+-- @param autreParam type : Description de l'autre paramètre
+-- @return type : Description de la valeur de retour
+function monModule.maFonction(param1, param2)
+    -- code
+end
+```
+
+### Règles de Documentation
+- **Toujours commencer par `---`** (triple tiret)
+- **Première ligne** : Description courte et claire
+- **@param** : Un par paramètre avec type et description
+- **@return** : Type et description de la valeur retournée
+- **Types courants** : `number`, `string`, `table`, `boolean`, `function`
+- **Paramètres optionnels** : Indiquer `(optionnel)` dans la description
+
+### Exemples Complets
+```lua
+--- Interpolation stable pour éviter les tremblements
+-- @param a table : Position actuelle {x, y}
+-- @param b table : Position cible {x, y}
+-- @param vitesse number : Vitesse d'interpolation (optionnel, défaut 10)
+-- @return boolean : True si un mouvement a eu lieu
+function monModule.lerp(a, b, vitesse)
+    -- code
+end
+
+--- Vérifie si une valeur est dans un intervalle
+-- @param valeur number : Valeur à tester
+-- @param min number : Borne inférieure
+-- @param max number : Borne supérieure
+-- @return boolean : True si valeur ∈ [min, max]
+function monModule.clamp(valeur, min, max)
+    -- code
+end
+```
+
+### Correction Automatique
+- **Détecter les fonctions non documentées** et ajouter la documentation
+- **Corriger les documentations incomplètes** (paramètres manquants, etc.)
+- **Respecter les types** et descriptions précises
+- **Ajouter des exemples** quand nécessaire
+
 Ces instructions doivent être suivies pour maintenir la structure modulaire et éviter les conflits de noms ou les chargements redondants.
