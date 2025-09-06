@@ -18,72 +18,123 @@ _G.config = config
 
 -- Détection du mode via arguments de ligne de commande
 local function detecterMode()
-    local args = love.arg.getLow(love.arg.parseGameArguments(arg))
+    -- Récupération sécurisée des arguments
+    local args = {}
+
+    -- Essai sécurisé d'accès à love.arg
+    if love and love.arg then
+        -- Utilisation correcte des arguments Love2D
+        local parsedArgs = love.arg.parseGameArguments(arg or {})
+        local lowArgs = love.arg.getLow(parsedArgs)
+
+        -- Vérification que lowArgs est une table
+        if type(lowArgs) == "table" then
+            args = lowArgs
+        else
+            -- Fallback si getLow retourne une string
+            args = {}
+        end
+    else
+        -- Fallback : pas d'arguments disponibles
+        args = {}
+    end
 
     -- Recherche des flags de mode
     for i, argument in ipairs(args) do
-        if argument == "--dev" or argument == "-d" then
-            return MODES.DEV
-        elseif argument == "--game" or argument == "-g" then
-            return MODES.GAME
+        if type(argument) == "string" then
+            if argument == "--dev" or argument == "-d" then
+                return MODES.DEV
+            elseif argument == "--game" or argument == "-g" then
+                return MODES.GAME
+            end
         end
     end
 
     -- Mode par défaut depuis la configuration
     return config.defaultMode == "game" and MODES.GAME or MODES.DEV
+end -- Variables globales du mode (initialisées dans love.load)
+local modeActuel = nil
+_G.gameMode = nil
+_G.isDevMode = nil
+_G.isGameMode = nil
+
+-- Variables globales du mode (initialisées dans love.load)
+local modeActuel = nil
+_G.gameMode = nil
+_G.isDevMode = nil
+_G.isGameMode = nil
+
+-- Fonction d'initialisation du mode (appelée depuis love.load)
+local function initialiserMode()
+    modeActuel = detecterMode()
+    _G.gameMode = modeActuel
+    _G.isDevMode = (modeActuel == MODES.DEV)
+    _G.isGameMode = (modeActuel == MODES.GAME)
 end
 
--- Variables globales du mode
-local modeActuel = detecterMode()
-_G.gameMode = modeActuel
-_G.isDevMode = (modeActuel == MODES.DEV)
-_G.isGameMode = (modeActuel == MODES.GAME)
+-- Initialisation différée des callbacks Love2D
+if love then
+    function love.load()
+        -- Initialisation du mode
+        initialiserMode()
 
-function love.load()
-    _G.globalFunction.log.info("=== LoveEngine v1.0 ===")
-    _G.globalFunction.log.info("Mode: " .. modeActuel:upper())
+        _G.globalFunction.log.info("=== LoveEngine v1.0 ===")
+        _G.globalFunction.log.info("Mode: " .. (modeActuel or "UNKNOWN"):upper())
 
-    if _G.isDevMode then
-        -- Mode Développement : Interface d'outils
-        _G.globalFunction.log.info("Initialisation du mode Développement...")
-        initialiserModeDev()
-    else
-        -- Mode Jeu : Jeu normal
-        _G.globalFunction.log.info("Initialisation du mode Jeu...")
-        initialiserModeJeu()
+        -- Initialisation du système responsive
+        if _G.responsive and _G.responsive.initWindow then
+            _G.responsive.initWindow()
+        end
+        if _G.responsive and _G.responsive.initMouse then
+            _G.responsive.initMouse()
+        end
+
+        if _G.isDevMode then
+            -- Mode Développement : Interface d'outils
+            _G.globalFunction.log.info("Initialisation du mode Développement...")
+            initialiserModeDev()
+        else
+            -- Mode Jeu : Jeu normal
+            _G.globalFunction.log.info("Initialisation du mode Jeu...")
+            initialiserModeJeu()
+        end
     end
-end
 
-function love.update(dt)
-    if _G.isDevMode then
-        updateModeDev(dt)
-    else
-        updateModeJeu(dt)
+    function love.update(dt)
+        if _G.isDevMode then
+            updateModeDev(dt)
+        else
+            updateModeJeu(dt)
+        end
     end
-end
 
-function love.draw()
-    if _G.isDevMode then
-        drawModeDev()
-    else
-        drawModeJeu()
+    function love.draw()
+        if _G.isDevMode then
+            drawModeDev()
+        else
+            drawModeJeu()
+        end
     end
-end
 
-function love.keypressed(key, scancode, isrepeat)
-    if _G.isDevMode then
-        keypressedModeDev(key, scancode, isrepeat)
-    else
-        keypressedModeJeu(key, scancode, isrepeat)
+    function love.keypressed(key, scancode, isrepeat)
+        if _G.isDevMode then
+            keypressedModeDev(key, scancode, isrepeat)
+        else
+            keypressedModeJeu(key, scancode, isrepeat)
+        end
     end
-end
 
-function love.mousepressed(x, y, button, istouch, presses)
-    if _G.isDevMode then
-        mousepressedModeDev(x, y, button, istouch, presses)
-    else
-        mousepressedModeJeu(x, y, button, istouch, presses)
+    function love.mousepressed(x, y, button, istouch, presses)
+        if _G.isDevMode then
+            mousepressedModeDev(x, y, button, istouch, presses)
+        else
+            mousepressedModeJeu(x, y, button, istouch, presses)
+        end
     end
+else
+    -- Mode hors Love2D (test/console)
+    print("LoveEngine: Mode hors Love2D détecté")
+    print("Utilisez 'love .' pour lancer avec Love2D")
 end
 
 -- =====================================================================
